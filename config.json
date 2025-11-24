@@ -1,0 +1,31 @@
+{
+  "experiments": [
+    {
+      "name": "small_class_A_10_trips",
+      "params": {
+        "num_trips": 10,
+        "num_depots": 2,
+        "num_relief_points": 12,
+        "problem_class": "A"
+      }
+    },
+    {
+      "name": "medium_class_B_30_trips",
+      "params": {
+        "num_trips": 30,
+        "num_depots": 3,
+        "num_relief_points": 25,
+        "problem_class": "B"
+      }
+    },
+    {
+      "name": "large_class_A_50_trips",
+      "params": {
+        "num_trips": 50,
+        "num_depots": 4,
+        "num_relief_points": 30,
+        "problem_class": "A"
+      }
+    }
+  ]
+}

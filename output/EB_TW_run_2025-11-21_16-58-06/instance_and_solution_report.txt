@@ -1,0 +1,689 @@
+--- INSTANCE INFORMATION ---
+--- Instance Generation Summary ---
+  - Trips to cover: 20
+  - Depots: 4
+  - Total vehicles available: 3
+
+--- Depot and Vehicle Information ---
+Depot ID: 110 | Location: (30.00, 16.00) | Vehicles: 1
+Depot ID: 120 | Location: ( 1.00, 14.00) | Vehicles: 2
+Depot ID: 130 | Location: (30.00, 16.00) | Vehicles: 0
+Depot ID: 210 | Location: (30.00, 16.00) | Vehicles: 0
+
+--- Detailed Trip Information ---
+Trip ID: 220 | Type: REGULAR | Starts at RP #10  -> Ends at RP #10  | Start/End Time:    0.00 to 1080.00 | Duration: 0.00 | ETA: 0.00
+Trip ID: 230 | Type: REGULAR | Starts at RP #12  -> Ends at RP #12  | Start/End Time:    0.00 to 1080.00 | Duration: 0.00 | ETA: 0.00
+Trip ID: 1   | Type: REGULAR | Starts at RP #13  -> Ends at RP #14  | Start/End Time:   49.00 to  349.00 | Duration: 64.50 | ETA: 32.25
+Trip ID: 2   | Type: REGULAR | Starts at RP #15  -> Ends at RP #16  | Start/End Time:   40.00 to  340.00 | Duration: 56.86 | ETA: 28.43
+Trip ID: 3   | Type: REGULAR | Starts at RP #17  -> Ends at RP #18  | Start/End Time:    0.00 to  300.00 | Duration: 14.32 | ETA: 7.16
+Trip ID: 4   | Type: REGULAR | Starts at RP #19  -> Ends at RP #20  | Start/End Time:  104.00 to  404.00 | Duration: 13.89 | ETA: 6.95
+Trip ID: 5   | Type: REGULAR | Starts at RP #21  -> Ends at RP #22  | Start/End Time:  127.00 to  427.00 | Duration: 48.47 | ETA: 24.23
+Trip ID: 6   | Type: REGULAR | Starts at RP #23  -> Ends at RP #24  | Start/End Time:  129.00 to  429.00 | Duration: 25.50 | ETA: 12.75
+Trip ID: 7   | Type: REGULAR | Starts at RP #25  -> Ends at RP #26  | Start/End Time:  211.00 to  511.00 | Duration: 38.42 | ETA: 19.21
+Trip ID: 8   | Type: REGULAR | Starts at RP #27  -> Ends at RP #28  | Start/End Time:  231.00 to  531.00 | Duration: 38.01 | ETA: 19.01
+Trip ID: 9   | Type: REGULAR | Starts at RP #29  -> Ends at RP #30  | Start/End Time:  225.00 to  525.00 | Duration: 24.19 | ETA: 12.09
+Trip ID: 10  | Type: REGULAR | Starts at RP #31  -> Ends at RP #32  | Start/End Time:  348.00 to  648.00 | Duration: 43.46 | ETA: 21.73
+Trip ID: 11  | Type: REGULAR | Starts at RP #33  -> Ends at RP #34  | Start/End Time:  312.00 to  612.00 | Duration: 40.02 | ETA: 20.01
+Trip ID: 12  | Type: REGULAR | Starts at RP #35  -> Ends at RP #36  | Start/End Time:  310.00 to  610.00 | Duration: 53.15 | ETA: 26.58
+Trip ID: 13  | Type: REGULAR | Starts at RP #37  -> Ends at RP #38  | Start/End Time:  451.00 to  751.00 | Duration: 40.31 | ETA: 20.16
+Trip ID: 14  | Type: REGULAR | Starts at RP #39  -> Ends at RP #40  | Start/End Time:  436.00 to  736.00 | Duration: 5.39 | ETA: 2.69
+Trip ID: 15  | Type: REGULAR | Starts at RP #41  -> Ends at RP #42  | Start/End Time:  417.00 to  717.00 | Duration: 36.14 | ETA: 18.07
+Trip ID: 16  | Type: REGULAR | Starts at RP #43  -> Ends at RP #44  | Start/End Time:  558.00 to  858.00 | Duration: 29.83 | ETA: 14.92
+Trip ID: 17  | Type: REGULAR | Starts at RP #45  -> Ends at RP #46  | Start/End Time:  519.00 to  819.00 | Duration: 9.00 | ETA: 4.50
+Trip ID: 18  | Type: REGULAR | Starts at RP #47  -> Ends at RP #48  | Start/End Time:  543.00 to  843.00 | Duration: 10.82 | ETA: 5.41
+
+--- Deadhead Travel Times (t_ij) ---
+
+Depot → Trip:
+  Depot 110 -> Trip 220: t_ij = 29.07
+  Depot 110 -> Trip 230: t_ij = 0.00
+  Depot 110 -> Trip 1: t_ij = 19.42
+  Depot 110 -> Trip 2: t_ij = 41.87
+  Depot 110 -> Trip 3: t_ij = 9.43
+  Depot 110 -> Trip 4: t_ij = 36.89
+  Depot 110 -> Trip 5: t_ij = 32.06
+  Depot 110 -> Trip 6: t_ij = 17.03
+  Depot 110 -> Trip 7: t_ij = 29.27
+  Depot 110 -> Trip 8: t_ij = 33.29
+  Depot 110 -> Trip 9: t_ij = 15.00
+  Depot 110 -> Trip 10: t_ij = 25.50
+  Depot 110 -> Trip 11: t_ij = 5.39
+  Depot 110 -> Trip 12: t_ij = 38.83
+  Depot 110 -> Trip 13: t_ij = 16.97
+  Depot 110 -> Trip 14: t_ij = 29.83
+  Depot 110 -> Trip 15: t_ij = 39.29
+  Depot 110 -> Trip 16: t_ij = 41.62
+  Depot 110 -> Trip 17: t_ij = 21.93
+  Depot 110 -> Trip 18: t_ij = 15.00
+  Depot 120 -> Trip 220: t_ij = 0.00
+  Depot 120 -> Trip 230: t_ij = 29.07
+  Depot 120 -> Trip 1: t_ij = 22.80
+  Depot 120 -> Trip 2: t_ij = 34.06
+  Depot 120 -> Trip 3: t_ij = 34.53
+  Depot 120 -> Trip 4: t_ij = 59.08
+  Depot 120 -> Trip 5: t_ij = 43.42
+  Depot 120 -> Trip 6: t_ij = 35.51
+  Depot 120 -> Trip 7: t_ij = 58.03
+  Depot 120 -> Trip 8: t_ij = 31.95
+  Depot 120 -> Trip 9: t_ij = 44.05
+  Depot 120 -> Trip 10: t_ij = 50.57
+  Depot 120 -> Trip 11: t_ij = 24.33
+  Depot 120 -> Trip 12: t_ij = 61.29
+  Depot 120 -> Trip 13: t_ij = 43.32
+  Depot 120 -> Trip 14: t_ij = 26.93
+  Depot 120 -> Trip 15: t_ij = 44.28
+  Depot 120 -> Trip 16: t_ij = 64.07
+  Depot 120 -> Trip 17: t_ij = 43.91
+  Depot 120 -> Trip 18: t_ij = 42.45
+  Depot 130 -> Trip 220: t_ij = 29.07
+  Depot 130 -> Trip 230: t_ij = 0.00
+  Depot 130 -> Trip 1: t_ij = 19.42
+  Depot 130 -> Trip 2: t_ij = 41.87
+  Depot 130 -> Trip 3: t_ij = 9.43
+  Depot 130 -> Trip 4: t_ij = 36.89
+  Depot 130 -> Trip 5: t_ij = 32.06
+  Depot 130 -> Trip 6: t_ij = 17.03
+  Depot 130 -> Trip 7: t_ij = 29.27
+  Depot 130 -> Trip 8: t_ij = 33.29
+  Depot 130 -> Trip 9: t_ij = 15.00
+  Depot 130 -> Trip 10: t_ij = 25.50
+  Depot 130 -> Trip 11: t_ij = 5.39
+  Depot 130 -> Trip 12: t_ij = 38.83
+  Depot 130 -> Trip 13: t_ij = 16.97
+  Depot 130 -> Trip 14: t_ij = 29.83
+  Depot 130 -> Trip 15: t_ij = 39.29
+  Depot 130 -> Trip 16: t_ij = 41.62
+  Depot 130 -> Trip 17: t_ij = 21.93
+  Depot 130 -> Trip 18: t_ij = 15.00
+  Depot 210 -> Trip 220: t_ij = 29.07
+  Depot 210 -> Trip 230: t_ij = 0.00
+  Depot 210 -> Trip 1: t_ij = 19.42
+  Depot 210 -> Trip 2: t_ij = 41.87
+  Depot 210 -> Trip 3: t_ij = 9.43
+  Depot 210 -> Trip 4: t_ij = 36.89
+  Depot 210 -> Trip 5: t_ij = 32.06
+  Depot 210 -> Trip 6: t_ij = 17.03
+  Depot 210 -> Trip 7: t_ij = 29.27
+  Depot 210 -> Trip 8: t_ij = 33.29
+  Depot 210 -> Trip 9: t_ij = 15.00
+  Depot 210 -> Trip 10: t_ij = 25.50
+  Depot 210 -> Trip 11: t_ij = 5.39
+  Depot 210 -> Trip 12: t_ij = 38.83
+  Depot 210 -> Trip 13: t_ij = 16.97
+  Depot 210 -> Trip 14: t_ij = 29.83
+  Depot 210 -> Trip 15: t_ij = 39.29
+  Depot 210 -> Trip 16: t_ij = 41.62
+  Depot 210 -> Trip 17: t_ij = 21.93
+  Depot 210 -> Trip 18: t_ij = 15.00
+
+Trip → Trip:
+  Trip 220 -> Trip 230: t_ij = 29.07
+  Trip 220 -> Trip 1: t_ij = 22.80
+  Trip 220 -> Trip 2: t_ij = 34.06
+  Trip 220 -> Trip 3: t_ij = 34.53
+  Trip 220 -> Trip 4: t_ij = 59.08
+  Trip 220 -> Trip 5: t_ij = 43.42
+  Trip 220 -> Trip 6: t_ij = 35.51
+  Trip 220 -> Trip 7: t_ij = 58.03
+  Trip 220 -> Trip 8: t_ij = 31.95
+  Trip 220 -> Trip 9: t_ij = 44.05
+  Trip 220 -> Trip 10: t_ij = 50.57
+  Trip 220 -> Trip 11: t_ij = 24.33
+  Trip 220 -> Trip 12: t_ij = 61.29
+  Trip 220 -> Trip 13: t_ij = 43.32
+  Trip 220 -> Trip 14: t_ij = 26.93
+  Trip 220 -> Trip 15: t_ij = 44.28
+  Trip 220 -> Trip 16: t_ij = 64.07
+  Trip 220 -> Trip 17: t_ij = 43.91
+  Trip 220 -> Trip 18: t_ij = 42.45
+  Trip 230 -> Trip 220: t_ij = 29.07
+  Trip 230 -> Trip 1: t_ij = 19.42
+  Trip 230 -> Trip 2: t_ij = 41.87
+  Trip 230 -> Trip 3: t_ij = 9.43
+  Trip 230 -> Trip 4: t_ij = 36.89
+  Trip 230 -> Trip 5: t_ij = 32.06
+  Trip 230 -> Trip 6: t_ij = 17.03
+  Trip 230 -> Trip 7: t_ij = 29.27
+  Trip 230 -> Trip 8: t_ij = 33.29
+  Trip 230 -> Trip 9: t_ij = 15.00
+  Trip 230 -> Trip 10: t_ij = 25.50
+  Trip 230 -> Trip 11: t_ij = 5.39
+  Trip 230 -> Trip 12: t_ij = 38.83
+  Trip 230 -> Trip 13: t_ij = 16.97
+  Trip 230 -> Trip 14: t_ij = 29.83
+  Trip 230 -> Trip 15: t_ij = 39.29
+  Trip 230 -> Trip 16: t_ij = 41.62
+  Trip 230 -> Trip 17: t_ij = 21.93
+  Trip 230 -> Trip 18: t_ij = 15.00
+  Trip 1 -> Trip 220: t_ij = 65.30
+  Trip 1 -> Trip 230: t_ij = 45.18
+  Trip 1 -> Trip 2: t_ij = 48.66
+  Trip 1 -> Trip 3: t_ij = 50.60
+  Trip 1 -> Trip 4: t_ij = 9.06
+  Trip 1 -> Trip 5: t_ij = 24.35
+  Trip 1 -> Trip 6: t_ij = 30.48
+  Trip 1 -> Trip 7: t_ij = 44.72
+  Trip 1 -> Trip 8: t_ij = 40.80
+  Trip 1 -> Trip 9: t_ij = 40.45
+  Trip 1 -> Trip 10: t_ij = 21.38
+  Trip 1 -> Trip 11: t_ij = 46.04
+  Trip 1 -> Trip 12: t_ij = 8.06
+  Trip 1 -> Trip 13: t_ij = 29.41
+  Trip 1 -> Trip 14: t_ij = 43.46
+  Trip 1 -> Trip 15: t_ij = 31.06
+  Trip 1 -> Trip 16: t_ij = 6.71
+  Trip 1 -> Trip 17: t_ij = 23.32
+  Trip 1 -> Trip 18: t_ij = 32.28
+  Trip 2 -> Trip 220: t_ij = 36.40
+  Trip 2 -> Trip 230: t_ij = 15.81
+  Trip 2 -> Trip 1: t_ij = 16.03
+  Trip 2 -> Trip 3: t_ij = 7.00
+  Trip 2 -> Trip 4: t_ij = 48.38
+  Trip 2 -> Trip 5: t_ij = 47.52
+  Trip 2 -> Trip 6: t_ij = 32.25
+  Trip 2 -> Trip 7: t_ij = 26.40
+  Trip 2 -> Trip 8: t_ij = 48.76
+  Trip 2 -> Trip 9: t_ij = 18.03
+  Trip 2 -> Trip 10: t_ij = 36.06
+  Trip 2 -> Trip 11: t_ij = 19.72
+  Trip 2 -> Trip 12: t_ij = 49.98
+  Trip 2 -> Trip 13: t_ij = 27.89
+  Trip 2 -> Trip 14: t_ij = 44.94
+  Trip 2 -> Trip 15: t_ij = 55.08
+  Trip 2 -> Trip 16: t_ij = 52.55
+  Trip 2 -> Trip 17: t_ij = 35.23
+  Trip 2 -> Trip 18: t_ij = 25.00
+  Trip 3 -> Trip 220: t_ij = 32.02
+  Trip 3 -> Trip 230: t_ij = 6.32
+  Trip 3 -> Trip 1: t_ij = 25.55
+  Trip 3 -> Trip 2: t_ij = 38.95
+  Trip 3 -> Trip 4: t_ij = 30.81
+  Trip 3 -> Trip 5: t_ij = 26.31
+  Trip 3 -> Trip 6: t_ij = 11.05
+  Trip 3 -> Trip 7: t_ij = 28.79
+  Trip 3 -> Trip 8: t_ij = 29.73
+  Trip 3 -> Trip 9: t_ij = 14.32
+  Trip 3 -> Trip 10: t_ij = 19.85
+  Trip 3 -> Trip 11: t_ij = 8.06
+  Trip 3 -> Trip 12: t_ij = 32.80
+  Trip 3 -> Trip 13: t_ij = 11.66
+  Trip 3 -> Trip 14: t_ij = 27.02
+  Trip 3 -> Trip 15: t_ij = 34.18
+  Trip 3 -> Trip 16: t_ij = 35.61
+  Trip 3 -> Trip 17: t_ij = 15.65
+  Trip 3 -> Trip 18: t_ij = 10.44
+  Trip 4 -> Trip 220: t_ij = 54.49
+  Trip 4 -> Trip 230: t_ij = 38.83
+  Trip 4 -> Trip 1: t_ij = 57.25
+  Trip 4 -> Trip 2: t_ij = 35.51
+  Trip 4 -> Trip 3: t_ij = 46.10
+  Trip 4 -> Trip 5: t_ij = 11.66
+  Trip 4 -> Trip 6: t_ij = 22.14
+  Trip 4 -> Trip 7: t_ij = 46.96
+  Trip 4 -> Trip 8: t_ij = 27.86
+  Trip 4 -> Trip 9: t_ij = 38.64
+  Trip 4 -> Trip 10: t_ij = 21.02
+  Trip 4 -> Trip 11: t_ij = 38.28
+  Trip 4 -> Trip 12: t_ij = 15.23
+  Trip 4 -> Trip 13: t_ij = 26.31
+  Trip 4 -> Trip 14: t_ij = 30.89
+  Trip 4 -> Trip 15: t_ij = 18.00
+  Trip 4 -> Trip 16: t_ij = 16.49
+  Trip 4 -> Trip 17: t_ij = 18.03
+  Trip 4 -> Trip 18: t_ij = 29.27
+  Trip 5 -> Trip 220: t_ij = 14.21
+  Trip 5 -> Trip 230: t_ij = 23.85
+  Trip 5 -> Trip 1: t_ij = 9.49
+  Trip 5 -> Trip 2: t_ij = 45.54
+  Trip 5 -> Trip 3: t_ij = 25.50
+  Trip 5 -> Trip 4: t_ij = 59.46
+  Trip 5 -> Trip 6: t_ij = 36.62
+  Trip 5 -> Trip 7: t_ij = 49.82
+  Trip 5 -> Trip 8: t_ij = 41.05
+  Trip 5 -> Trip 9: t_ij = 37.34
+  Trip 5 -> Trip 10: t_ij = 48.92
+  Trip 5 -> Trip 11: t_ij = 21.21
+  Trip 5 -> Trip 12: t_ij = 61.55
+  Trip 5 -> Trip 13: t_ij = 40.61
+  Trip 5 -> Trip 14: t_ij = 36.01
+  Trip 5 -> Trip 15: t_ij = 51.97
+  Trip 5 -> Trip 16: t_ij = 64.38
+  Trip 5 -> Trip 17: t_ij = 43.93
+  Trip 5 -> Trip 18: t_ij = 38.83
+  Trip 6 -> Trip 220: t_ij = 56.75
+  Trip 6 -> Trip 230: t_ij = 28.64
+  Trip 6 -> Trip 1: t_ij = 46.40
+  Trip 6 -> Trip 2: t_ij = 56.65
+  Trip 6 -> Trip 3: t_ij = 29.00
+  Trip 6 -> Trip 4: t_ij = 19.92
+  Trip 6 -> Trip 5: t_ij = 34.41
+  Trip 6 -> Trip 7: t_ij = 16.28
+  Trip 6 -> Trip 8: t_ij = 46.82
+  Trip 6 -> Trip 9: t_ij = 16.28
+  Trip 6 -> Trip 10: t_ij = 11.40
+  Trip 6 -> Trip 11: t_ij = 32.57
+  Trip 6 -> Trip 12: t_ij = 20.40
+  Trip 6 -> Trip 13: t_ij = 14.00
+  Trip 6 -> Trip 14: t_ij = 46.32
+  Trip 6 -> Trip 15: t_ij = 44.41
+  Trip 6 -> Trip 16: t_ij = 22.09
+  Trip 6 -> Trip 17: t_ij = 18.79
+  Trip 6 -> Trip 18: t_ij = 14.32
+  Trip 7 -> Trip 220: t_ij = 44.05
+  Trip 7 -> Trip 230: t_ij = 26.48
+  Trip 7 -> Trip 1: t_ij = 44.94
+  Trip 7 -> Trip 2: t_ij = 32.56
+  Trip 7 -> Trip 3: t_ij = 34.00
+  Trip 7 -> Trip 4: t_ij = 15.81
+  Trip 7 -> Trip 5: t_ij = 9.22
+  Trip 7 -> Trip 6: t_ij = 9.85
+  Trip 7 -> Trip 8: t_ij = 23.09
+  Trip 7 -> Trip 9: t_ij = 27.86
+  Trip 7 -> Trip 10: t_ij = 13.89
+  Trip 7 -> Trip 11: t_ij = 26.00
+  Trip 7 -> Trip 12: t_ij = 18.03
+  Trip 7 -> Trip 13: t_ij = 15.65
+  Trip 7 -> Trip 14: t_ij = 24.19
+  Trip 7 -> Trip 15: t_ij = 19.21
+  Trip 7 -> Trip 16: t_ij = 20.62
+  Trip 7 -> Trip 17: t_ij = 7.21
+  Trip 7 -> Trip 18: t_ij = 18.38
+  Trip 8 -> Trip 220: t_ij = 12.81
+  Trip 8 -> Trip 230: t_ij = 21.47
+  Trip 8 -> Trip 1: t_ij = 10.00
+  Trip 8 -> Trip 2: t_ij = 42.76
+  Trip 8 -> Trip 3: t_ij = 24.08
+  Trip 8 -> Trip 4: t_ij = 56.59
+  Trip 8 -> Trip 5: t_ij = 45.31
+  Trip 8 -> Trip 6: t_ij = 33.60
+  Trip 8 -> Trip 7: t_ij = 48.37
+  Trip 8 -> Trip 9: t_ij = 35.44
+  Trip 8 -> Trip 10: t_ij = 46.23
+  Trip 8 -> Trip 11: t_ij = 18.44
+  Trip 8 -> Trip 12: t_ij = 58.69
+  Trip 8 -> Trip 13: t_ij = 38.01
+  Trip 8 -> Trip 14: t_ij = 33.00
+  Trip 8 -> Trip 15: t_ij = 48.84
+  Trip 8 -> Trip 16: t_ij = 61.52
+  Trip 8 -> Trip 17: t_ij = 41.04
+  Trip 8 -> Trip 18: t_ij = 36.36
+  Trip 9 -> Trip 220: t_ij = 53.71
+  Trip 9 -> Trip 230: t_ij = 30.00
+  Trip 9 -> Trip 1: t_ij = 49.41
+  Trip 9 -> Trip 2: t_ij = 45.71
+  Trip 9 -> Trip 3: t_ij = 34.54
+  Trip 9 -> Trip 4: t_ij = 7.28
+  Trip 9 -> Trip 5: t_ij = 21.54
+  Trip 9 -> Trip 6: t_ij = 18.38
+  Trip 9 -> Trip 7: t_ij = 30.08
+  Trip 9 -> Trip 8: t_ij = 36.22
+  Trip 9 -> Trip 10: t_ij = 5.10
+  Trip 9 -> Trip 11: t_ij = 31.83
+  Trip 9 -> Trip 12: t_ij = 8.94
+  Trip 9 -> Trip 13: t_ij = 13.42
+  Trip 9 -> Trip 14: t_ij = 37.01
+  Trip 9 -> Trip 15: t_ij = 31.30
+  Trip 9 -> Trip 16: t_ij = 11.66
+  Trip 9 -> Trip 17: t_ij = 9.85
+  Trip 9 -> Trip 18: t_ij = 16.16
+  Trip 10 -> Trip 220: t_ij = 38.47
+  Trip 10 -> Trip 230: t_ij = 42.72
+  Trip 10 -> Trip 1: t_ij = 53.37
+  Trip 10 -> Trip 2: t_ij = 5.66
+  Trip 10 -> Trip 3: t_ij = 52.15
+  Trip 10 -> Trip 4: t_ij = 43.29
+  Trip 10 -> Trip 5: t_ij = 21.38
+  Trip 10 -> Trip 6: t_ij = 30.61
+  Trip 10 -> Trip 7: t_ij = 65.60
+  Trip 10 -> Trip 8: t_ij = 9.43
+  Trip 10 -> Trip 9: t_ij = 52.35
+  Trip 10 -> Trip 11: t_ij = 38.47
+  Trip 10 -> Trip 12: t_ij = 45.18
+  Trip 10 -> Trip 13: t_ij = 42.44
+  Trip 10 -> Trip 14: t_ij = 13.60
+  Trip 10 -> Trip 15: t_ij = 13.15
+  Trip 10 -> Trip 16: t_ij = 47.04
+  Trip 10 -> Trip 17: t_ij = 35.78
+  Trip 10 -> Trip 18: t_ij = 44.20
+  Trip 11 -> Trip 220: t_ij = 45.54
+  Trip 11 -> Trip 230: t_ij = 43.32
+  Trip 11 -> Trip 1: t_ij = 57.08
+  Trip 11 -> Trip 2: t_ij = 15.81
+  Trip 11 -> Trip 3: t_ij = 52.55
+  Trip 11 -> Trip 4: t_ij = 35.44
+  Trip 11 -> Trip 5: t_ij = 15.00
+  Trip 11 -> Trip 6: t_ij = 28.30
+  Trip 11 -> Trip 7: t_ij = 62.24
+  Trip 11 -> Trip 8: t_ij = 13.60
+  Trip 11 -> Trip 9: t_ij = 50.22
+  Trip 11 -> Trip 10: t_ij = 38.01
+  Trip 11 -> Trip 12: t_ij = 37.11
+  Trip 11 -> Trip 13: t_ij = 38.95
+  Trip 11 -> Trip 14: t_ij = 18.68
+  Trip 11 -> Trip 15: t_ij = 5.00
+  Trip 11 -> Trip 16: t_ij = 38.64
+  Trip 11 -> Trip 17: t_ij = 31.14
+  Trip 11 -> Trip 18: t_ij = 41.23
+  Trip 12 -> Trip 220: t_ij = 45.01
+  Trip 12 -> Trip 230: t_ij = 52.43
+  Trip 12 -> Trip 1: t_ij = 61.98
+  Trip 12 -> Trip 2: t_ij = 11.40
+  Trip 12 -> Trip 3: t_ij = 61.85
+  Trip 12 -> Trip 4: t_ij = 51.42
+  Trip 12 -> Trip 5: t_ij = 30.08
+  Trip 12 -> Trip 6: t_ij = 40.46
+  Trip 12 -> Trip 7: t_ij = 75.43
+  Trip 12 -> Trip 8: t_ij = 19.21
+  Trip 12 -> Trip 9: t_ij = 62.24
+  Trip 12 -> Trip 10: t_ij = 52.77
+  Trip 12 -> Trip 11: t_ij = 48.02
+  Trip 12 -> Trip 13: t_ij = 52.20
+  Trip 12 -> Trip 14: t_ij = 22.83
+  Trip 12 -> Trip 15: t_ij = 20.62
+  Trip 12 -> Trip 16: t_ij = 54.74
+  Trip 12 -> Trip 17: t_ij = 45.28
+  Trip 12 -> Trip 18: t_ij = 54.04
+  Trip 13 -> Trip 220: t_ij = 34.53
+  Trip 13 -> Trip 230: t_ij = 39.41
+  Trip 13 -> Trip 1: t_ij = 49.48
+  Trip 13 -> Trip 2: t_ij = 4.00
+  Trip 13 -> Trip 3: t_ij = 48.83
+  Trip 13 -> Trip 4: t_ij = 43.01
+  Trip 13 -> Trip 5: t_ij = 21.00
+  Trip 13 -> Trip 6: t_ij = 28.30
+  Trip 13 -> Trip 7: t_ij = 63.25
+  Trip 13 -> Trip 8: t_ij = 6.40
+  Trip 13 -> Trip 9: t_ij = 49.68
+  Trip 13 -> Trip 10: t_ij = 42.06
+  Trip 13 -> Trip 11: t_ij = 34.99
+  Trip 13 -> Trip 12: t_ij = 45.00
+  Trip 13 -> Trip 14: t_ij = 9.85
+  Trip 13 -> Trip 15: t_ij = 14.32
+  Trip 13 -> Trip 16: t_ij = 47.04
+  Trip 13 -> Trip 17: t_ij = 34.18
+  Trip 13 -> Trip 18: t_ij = 41.88
+  Trip 14 -> Trip 220: t_ij = 23.32
+  Trip 14 -> Trip 230: t_ij = 24.76
+  Trip 14 -> Trip 1: t_ij = 34.53
+  Trip 14 -> Trip 2: t_ij = 17.20
+  Trip 14 -> Trip 3: t_ij = 34.06
+  Trip 14 -> Trip 4: t_ij = 39.22
+  Trip 14 -> Trip 5: t_ij = 20.52
+  Trip 14 -> Trip 6: t_ij = 18.03
+  Trip 14 -> Trip 7: t_ij = 50.99
+  Trip 14 -> Trip 8: t_ij = 10.05
+  Trip 14 -> Trip 9: t_ij = 36.72
+  Trip 14 -> Trip 10: t_ij = 34.01
+  Trip 14 -> Trip 11: t_ij = 20.00
+  Trip 14 -> Trip 12: t_ij = 41.44
+  Trip 14 -> Trip 13: t_ij = 29.61
+  Trip 14 -> Trip 15: t_ij = 21.19
+  Trip 14 -> Trip 16: t_ij = 44.01
+  Trip 14 -> Trip 17: t_ij = 26.08
+  Trip 14 -> Trip 18: t_ij = 30.36
+  Trip 15 -> Trip 220: t_ij = 62.27
+  Trip 15 -> Trip 230: t_ij = 38.29
+  Trip 15 -> Trip 1: t_ij = 57.63
+  Trip 15 -> Trip 2: t_ij = 52.09
+  Trip 15 -> Trip 3: t_ij = 42.06
+  Trip 15 -> Trip 4: t_ij = 5.39
+  Trip 15 -> Trip 5: t_ij = 27.17
+  Trip 15 -> Trip 6: t_ij = 26.83
+  Trip 15 -> Trip 7: t_ij = 33.24
+  Trip 15 -> Trip 8: t_ij = 43.01
+  Trip 15 -> Trip 9: t_ij = 30.68
+  Trip 15 -> Trip 10: t_ij = 12.81
+  Trip 15 -> Trip 11: t_ij = 40.36
+  Trip 15 -> Trip 12: t_ij = 4.24
+  Trip 15 -> Trip 13: t_ij = 21.40
+  Trip 15 -> Trip 14: t_ij = 44.41
+  Trip 15 -> Trip 16: t_ij = 5.10
+  Trip 15 -> Trip 17: t_ij = 18.36
+  Trip 15 -> Trip 18: t_ij = 23.85
+  Trip 16 -> Trip 220: t_ij = 37.64
+  Trip 16 -> Trip 230: t_ij = 27.46
+  Trip 16 -> Trip 1: t_ij = 43.42
+  Trip 16 -> Trip 2: t_ij = 22.56
+  Trip 16 -> Trip 3: t_ij = 36.40
+  Trip 16 -> Trip 4: t_ij = 25.32
+  Trip 16 -> Trip 5: t_ij = 5.83
+  Trip 16 -> Trip 6: t_ij = 11.66
+  Trip 16 -> Trip 7: t_ij = 46.01
+  Trip 16 -> Trip 8: t_ij = 13.04
+  Trip 16 -> Trip 9: t_ij = 33.60
+  Trip 16 -> Trip 10: t_ij = 23.41
+  Trip 16 -> Trip 11: t_ij = 25.00
+  Trip 16 -> Trip 12: t_ij = 27.46
+  Trip 16 -> Trip 13: t_ij = 22.67
+  Trip 16 -> Trip 14: t_ij = 14.56
+  Trip 16 -> Trip 15: t_ij = 12.08
+  Trip 16 -> Trip 17: t_ij = 15.65
+  Trip 16 -> Trip 18: t_ij = 24.76
+  Trip 17 -> Trip 220: t_ij = 49.04
+  Trip 17 -> Trip 230: t_ij = 30.36
+  Trip 17 -> Trip 1: t_ij = 49.24
+  Trip 17 -> Trip 2: t_ij = 36.12
+  Trip 17 -> Trip 3: t_ij = 37.22
+  Trip 17 -> Trip 4: t_ij = 11.18
+  Trip 17 -> Trip 5: t_ij = 11.40
+  Trip 17 -> Trip 6: t_ij = 14.42
+  Trip 17 -> Trip 7: t_ij = 38.59
+  Trip 17 -> Trip 8: t_ij = 27.02
+  Trip 17 -> Trip 9: t_ij = 29.61
+  Trip 17 -> Trip 10: t_ij = 12.81
+  Trip 17 -> Trip 11: t_ij = 30.41
+  Trip 17 -> Trip 12: t_ij = 13.34
+  Trip 17 -> Trip 13: t_ij = 17.26
+  Trip 17 -> Trip 14: t_ij = 28.64
+  Trip 17 -> Trip 15: t_ij = 21.02
+  Trip 17 -> Trip 16: t_ij = 15.81
+  Trip 17 -> Trip 18: t_ij = 20.22
+  Trip 18 -> Trip 220: t_ij = 50.25
+  Trip 18 -> Trip 230: t_ij = 21.21
+  Trip 18 -> Trip 1: t_ij = 37.22
+  Trip 18 -> Trip 2: t_ij = 56.08
+  Trip 18 -> Trip 3: t_ij = 19.42
+  Trip 18 -> Trip 4: t_ij = 28.02
+  Trip 18 -> Trip 5: t_ij = 37.01
+  Trip 18 -> Trip 6: t_ij = 24.41
+  Trip 18 -> Trip 7: t_ij = 10.63
+  Trip 18 -> Trip 8: t_ij = 46.32
+  Trip 18 -> Trip 9: t_ij = 6.71
+  Trip 18 -> Trip 10: t_ij = 16.49
+  Trip 18 -> Trip 11: t_ij = 26.02
+  Trip 18 -> Trip 12: t_ij = 29.02
+  Trip 18 -> Trip 13: t_ij = 12.73
+  Trip 18 -> Trip 14: t_ij = 44.72
+  Trip 18 -> Trip 15: t_ij = 46.75
+  Trip 18 -> Trip 16: t_ij = 31.14
+  Trip 18 -> Trip 17: t_ij = 20.81
+
+Trip → Depot:
+  Trip 220 -> Depot 110: t_ij = 29.07
+  Trip 220 -> Depot 120: t_ij = 0.00
+  Trip 220 -> Depot 130: t_ij = 29.07
+  Trip 220 -> Depot 210: t_ij = 29.07
+  Trip 230 -> Depot 110: t_ij = 0.00
+  Trip 230 -> Depot 120: t_ij = 29.07
+  Trip 230 -> Depot 130: t_ij = 0.00
+  Trip 230 -> Depot 210: t_ij = 0.00
+  Trip 1 -> Depot 110: t_ij = 45.18
+  Trip 1 -> Depot 120: t_ij = 65.30
+  Trip 1 -> Depot 130: t_ij = 45.18
+  Trip 1 -> Depot 210: t_ij = 45.18
+  Trip 2 -> Depot 110: t_ij = 15.81
+  Trip 2 -> Depot 120: t_ij = 36.40
+  Trip 2 -> Depot 130: t_ij = 15.81
+  Trip 2 -> Depot 210: t_ij = 15.81
+  Trip 3 -> Depot 110: t_ij = 6.32
+  Trip 3 -> Depot 120: t_ij = 32.02
+  Trip 3 -> Depot 130: t_ij = 6.32
+  Trip 3 -> Depot 210: t_ij = 6.32
+  Trip 4 -> Depot 110: t_ij = 38.83
+  Trip 4 -> Depot 120: t_ij = 54.49
+  Trip 4 -> Depot 130: t_ij = 38.83
+  Trip 4 -> Depot 210: t_ij = 38.83
+  Trip 5 -> Depot 110: t_ij = 23.85
+  Trip 5 -> Depot 120: t_ij = 14.21
+  Trip 5 -> Depot 130: t_ij = 23.85
+  Trip 5 -> Depot 210: t_ij = 23.85
+  Trip 6 -> Depot 110: t_ij = 28.64
+  Trip 6 -> Depot 120: t_ij = 56.75
+  Trip 6 -> Depot 130: t_ij = 28.64
+  Trip 6 -> Depot 210: t_ij = 28.64
+  Trip 7 -> Depot 110: t_ij = 26.48
+  Trip 7 -> Depot 120: t_ij = 44.05
+  Trip 7 -> Depot 130: t_ij = 26.48
+  Trip 7 -> Depot 210: t_ij = 26.48
+  Trip 8 -> Depot 110: t_ij = 21.47
+  Trip 8 -> Depot 120: t_ij = 12.81
+  Trip 8 -> Depot 130: t_ij = 21.47
+  Trip 8 -> Depot 210: t_ij = 21.47
+  Trip 9 -> Depot 110: t_ij = 30.00
+  Trip 9 -> Depot 120: t_ij = 53.71
+  Trip 9 -> Depot 130: t_ij = 30.00
+  Trip 9 -> Depot 210: t_ij = 30.00
+  Trip 10 -> Depot 110: t_ij = 42.72
+  Trip 10 -> Depot 120: t_ij = 38.47
+  Trip 10 -> Depot 130: t_ij = 42.72
+  Trip 10 -> Depot 210: t_ij = 42.72
+  Trip 11 -> Depot 110: t_ij = 43.32
+  Trip 11 -> Depot 120: t_ij = 45.54
+  Trip 11 -> Depot 130: t_ij = 43.32
+  Trip 11 -> Depot 210: t_ij = 43.32
+  Trip 12 -> Depot 110: t_ij = 52.43
+  Trip 12 -> Depot 120: t_ij = 45.01
+  Trip 12 -> Depot 130: t_ij = 52.43
+  Trip 12 -> Depot 210: t_ij = 52.43
+  Trip 13 -> Depot 110: t_ij = 39.41
+  Trip 13 -> Depot 120: t_ij = 34.53
+  Trip 13 -> Depot 130: t_ij = 39.41
+  Trip 13 -> Depot 210: t_ij = 39.41
+  Trip 14 -> Depot 110: t_ij = 24.76
+  Trip 14 -> Depot 120: t_ij = 23.32
+  Trip 14 -> Depot 130: t_ij = 24.76
+  Trip 14 -> Depot 210: t_ij = 24.76
+  Trip 15 -> Depot 110: t_ij = 38.29
+  Trip 15 -> Depot 120: t_ij = 62.27
+  Trip 15 -> Depot 130: t_ij = 38.29
+  Trip 15 -> Depot 210: t_ij = 38.29
+  Trip 16 -> Depot 110: t_ij = 27.46
+  Trip 16 -> Depot 120: t_ij = 37.64
+  Trip 16 -> Depot 130: t_ij = 27.46
+  Trip 16 -> Depot 210: t_ij = 27.46
+  Trip 17 -> Depot 110: t_ij = 30.36
+  Trip 17 -> Depot 120: t_ij = 49.04
+  Trip 17 -> Depot 130: t_ij = 30.36
+  Trip 17 -> Depot 210: t_ij = 30.36
+  Trip 18 -> Depot 110: t_ij = 21.21
+  Trip 18 -> Depot 120: t_ij = 50.25
+  Trip 18 -> Depot 130: t_ij = 21.21
+  Trip 18 -> Depot 210: t_ij = 21.21
+
+--- SOLUTION ---
+Optimal solution found with total cost: 2892.05
+Total vehicles used: 2 out of 3
+ - Vehicle D110_V1 schedule: O110 (Time: 0.00, E_bar: 500.0) -> T230 (Time: 306.61 (E_pre: 500.0, G: 0.0, E_bar: 500.0)) -> T11 (Time: 312.00 (E_pre: 497.3, G: 20.0, E_bar: 477.3)) -> T6 (Time: 380.33 (E_pre: 463.1, G: 12.7, E_bar: 450.4)) -> T7 (Time: 422.10 (E_pre: 442.3, G: 19.2, E_bar: 423.0)) -> T10 (Time: 474.41 (E_pre: 416.1, G: 21.7, E_bar: 394.4)) -> T15 (Time: 531.03 (E_pre: 387.8, G: 18.1, E_bar: 369.7)) -> T16 (Time: 572.27 (E_pre: 367.2, G: 14.9, E_bar: 352.3)) -> T17 (Time: 617.75 (E_pre: 344.4, G: 4.5, E_bar: 339.9)) -> T18 (Time: 646.97 (E_pre: 329.8, G: 5.4, E_bar: 324.4)) -> T13 (Time: 670.52 (E_pre: 318.0, G: 20.2, E_bar: 297.9)) -> T14 (Time: 720.68 (E_pre: 293.0, G: 2.7, E_bar: 290.3)) -> D110 (Time: 10000.00 (E_pre: 277.9, G: -500.0, E_bar: 0.0))
+ - Vehicle D120_V2 schedule: O120 (Time: 0.00, E_bar: 500.0) -> T220 (Time: 98.45 (E_pre: 500.0, G: 0.0, E_bar: 500.0)) -> T2 (Time: 132.50 (E_pre: 483.0, G: 28.4, E_bar: 454.5)) -> T3 (Time: 196.36 (E_pre: 451.0, G: 7.2, E_bar: 443.9)) -> T9 (Time: 225.00 (E_pre: 436.7, G: 12.1, E_bar: 424.6)) -> T4 (Time: 256.47 (E_pre: 421.0, G: 6.9, E_bar: 414.0)) -> T5 (Time: 282.02 (E_pre: 408.2, G: 24.2, E_bar: 384.0)) -> T1 (Time: 339.97 (E_pre: 379.2, G: 32.2, E_bar: 347.0)) -> T12 (Time: 412.53 (E_pre: 343.0, G: 26.6, E_bar: 316.4)) -> T8 (Time: 484.89 (E_pre: 306.8, G: 19.0, E_bar: 287.8)) -> D120 (Time: 10000.00 (E_pre: 281.4, G: -500.0, E_bar: 0.0))
+
+--- SOLUTION VARIABLES ---
+--- Active Arc Variables (x[k,i,j] = 1) ---
+  x[D110_V1, O110, T230] = 1 (Cost: 0.0, Cons: 0.0)
+  x[D110_V1, T10, T15] = 1 (Cost: 131.52946437965906, Cons: 6.6)
+  x[D110_V1, T11, T6] = 1 (Cost: 283.0194339616981, Cons: 14.2)
+  x[D110_V1, T13, T14] = 1 (Cost: 98.48857801796103, Cons: 4.9)
+  x[D110_V1, T14, D110] = 1 (Cost: 247.58836806279896, Cons: 12.4)
+  x[D110_V1, T15, T16] = 1 (Cost: 50.99019513592785, Cons: 2.5)
+  x[D110_V1, T16, T17] = 1 (Cost: 156.5247584249853, Cons: 7.8)
+  x[D110_V1, T17, T18] = 1 (Cost: 202.23748416156684, Cons: 10.1)
+  x[D110_V1, T18, T13] = 1 (Cost: 127.27922061357856, Cons: 6.4)
+  x[D110_V1, T230, T11] = 1 (Cost: 53.85164807134504, Cons: 2.7)
+  x[D110_V1, T6, T7] = 1 (Cost: 162.78820596099706, Cons: 8.1)
+  x[D110_V1, T7, T10] = 1 (Cost: 138.92443989449805, Cons: 6.9)
+  x[D120_V2, O120, T220] = 1 (Cost: 0.0, Cons: 0.0)
+  x[D120_V2, T1, T12] = 1 (Cost: 80.62257748298549, Cons: 4.0)
+  x[D120_V2, T12, T8] = 1 (Cost: 192.09372712298546, Cons: 9.6)
+  x[D120_V2, T2, T3] = 1 (Cost: 70.0, Cons: 3.5)
+  x[D120_V2, T220, T2] = 1 (Cost: 340.58772731852804, Cons: 17.0)
+  x[D120_V2, T3, T9] = 1 (Cost: 143.17821063276352, Cons: 7.2)
+  x[D120_V2, T4, T5] = 1 (Cost: 116.61903789690601, Cons: 5.8)
+  x[D120_V2, T5, T1] = 1 (Cost: 94.86832980505139, Cons: 4.7)
+  x[D120_V2, T8, D120] = 1 (Cost: 128.06248474865697, Cons: 6.4)
+  x[D120_V2, T9, T4] = 1 (Cost: 72.80109889280519, Cons: 3.6)
+
+--- Node Start Times (T[k,i] > 0) ---
+  T[D110_V1, D110] = 10000.00
+  T[D110_V1, T10] = 474.41
+  T[D110_V1, T11] = 312.00
+  T[D110_V1, T13] = 670.52
+  T[D110_V1, T14] = 720.68
+  T[D110_V1, T15] = 531.03
+  T[D110_V1, T16] = 572.27
+  T[D110_V1, T17] = 617.75
+  T[D110_V1, T18] = 646.97
+  T[D110_V1, T230] = 306.61
+  T[D110_V1, T6] = 380.33
+  T[D110_V1, T7] = 422.10
+  T[D120_V2, D120] = 10000.00
+  T[D120_V2, T1] = 339.97
+  T[D120_V2, T12] = 412.53
+  T[D120_V2, T2] = 132.50
+  T[D120_V2, T220] = 98.45
+  T[D120_V2, T3] = 196.36
+  T[D120_V2, T4] = 256.47
+  T[D120_V2, T5] = 282.02
+  T[D120_V2, T8] = 484.89
+  T[D120_V2, T9] = 225.00
+
+--- Incurred Waiting Costs (w[k,i,j] > 0) ---
+
+--- Energy Levels (E_pre, G, E_bar) ---
+  D110_V1, O110: E_pre=0.0 | G=-500.0 | E_bar=500.0 (Min/Max: 10.0/500.0)
+  D110_V1, T10: E_pre=416.1 | G=21.7 | E_bar=394.4 (Min/Max: 10.0/500.0)
+  D110_V1, T11: E_pre=497.3 | G=20.0 | E_bar=477.3 (Min/Max: 10.0/500.0)
+  D110_V1, T13: E_pre=318.0 | G=20.2 | E_bar=297.9 (Min/Max: 10.0/500.0)
+  D110_V1, T14: E_pre=293.0 | G=2.7 | E_bar=290.3 (Min/Max: 10.0/500.0)
+  D110_V1, T15: E_pre=387.8 | G=18.1 | E_bar=369.7 (Min/Max: 10.0/500.0)
+  D110_V1, T16: E_pre=367.2 | G=14.9 | E_bar=352.3 (Min/Max: 10.0/500.0)
+  D110_V1, T17: E_pre=344.4 | G=4.5 | E_bar=339.9 (Min/Max: 10.0/500.0)
+  D110_V1, T18: E_pre=329.8 | G=5.4 | E_bar=324.4 (Min/Max: 10.0/500.0)
+  D110_V1, T230: E_pre=500.0 | G=0.0 | E_bar=500.0 (Min/Max: 10.0/500.0)
+  D110_V1, T6: E_pre=463.1 | G=12.7 | E_bar=450.4 (Min/Max: 10.0/500.0)
+  D110_V1, T7: E_pre=442.3 | G=19.2 | E_bar=423.0 (Min/Max: 10.0/500.0)
+  D120_V2, O120: E_pre=0.0 | G=-500.0 | E_bar=500.0 (Min/Max: 10.0/500.0)
+  D120_V2, T1: E_pre=379.2 | G=32.2 | E_bar=347.0 (Min/Max: 10.0/500.0)
+  D120_V2, T12: E_pre=343.0 | G=26.6 | E_bar=316.4 (Min/Max: 10.0/500.0)
+  D120_V2, T2: E_pre=483.0 | G=28.4 | E_bar=454.5 (Min/Max: 10.0/500.0)
+  D120_V2, T220: E_pre=500.0 | G=0.0 | E_bar=500.0 (Min/Max: 10.0/500.0)
+  D120_V2, T3: E_pre=451.0 | G=7.2 | E_bar=443.9 (Min/Max: 10.0/500.0)
+  D120_V2, T4: E_pre=421.0 | G=6.9 | E_bar=414.0 (Min/Max: 10.0/500.0)
+  D120_V2, T5: E_pre=408.2 | G=24.2 | E_bar=384.0 (Min/Max: 10.0/500.0)
+  D120_V2, T8: E_pre=306.8 | G=19.0 | E_bar=287.8 (Min/Max: 10.0/500.0)
+  D120_V2, T9: E_pre=436.7 | G=12.1 | E_bar=424.6 (Min/Max: 10.0/500.0)
+
+--- Charging Completion Times (CT[k, j] > 0) ---
+
+--- Charging Order Variables (Y[j, k1, k2] = 1) ---
+  Y[C1, D110_V1, D120_V1] = 1
+  Y[C1, D110_V1, D120_V2] = 1
+  Y[C1, D120_V1, D110_V1] = 1
+  Y[C1, D120_V1, D120_V2] = 1
+  Y[C1, D120_V2, D110_V1] = 1
+  Y[C1, D120_V2, D120_V1] = 1
+  Y[C2, D110_V1, D120_V1] = 1
+  Y[C2, D110_V1, D120_V2] = 1
+  Y[C2, D120_V1, D110_V1] = 1
+  Y[C2, D120_V2, D110_V1] = 1
+  Y[C2, D120_V2, D120_V1] = 1
+  Y[C3, D110_V1, D120_V1] = 1
+  Y[C3, D110_V1, D120_V2] = 1
+  Y[C3, D120_V1, D110_V1] = 1
+  Y[C3, D120_V1, D120_V2] = 1
+  Y[C3, D120_V2, D110_V1] = 1
+  Y[C3, D120_V2, D120_V1] = 1
+  Y[C4, D110_V1, D120_V1] = 1
+  Y[C4, D110_V1, D120_V2] = 1
+  Y[C4, D120_V1, D110_V1] = 1
+  Y[C4, D120_V1, D120_V2] = 1
+  Y[C4, D120_V2, D110_V1] = 1
+  Y[C4, D120_V2, D120_V1] = 1

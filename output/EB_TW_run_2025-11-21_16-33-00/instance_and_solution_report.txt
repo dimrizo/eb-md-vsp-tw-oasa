@@ -1,0 +1,261 @@
+--- INSTANCE INFORMATION ---
+--- Instance Generation Summary ---
+  - Trips to cover: 10
+  - Depots: 4
+  - Total vehicles available: 2
+
+--- Depot and Vehicle Information ---
+Depot ID: 11 | Location: ( 1.00, 56.00) | Vehicles: 1
+Depot ID: 12 | Location: (54.00, 36.00) | Vehicles: 1
+Depot ID: 21 | Location: ( 1.00, 56.00) | Vehicles: 0
+Depot ID: 22 | Location: (54.00, 36.00) | Vehicles: 0
+
+--- Detailed Trip Information ---
+Trip ID: 1   | Type: REGULAR | Starts at RP #9   -> Ends at RP #10  | Start/End Time:   40.00 to  440.00 | Duration: 12.81 | ETA: 16.65
+Trip ID: 2   | Type: REGULAR | Starts at RP #11  -> Ends at RP #12  | Start/End Time:   15.00 to  415.00 | Duration: 56.22 | ETA: 73.09
+Trip ID: 3   | Type: REGULAR | Starts at RP #13  -> Ends at RP #14  | Start/End Time:  104.00 to  504.00 | Duration: 9.85 | ETA: 12.80
+Trip ID: 4   | Type: REGULAR | Starts at RP #15  -> Ends at RP #16  | Start/End Time:  144.00 to  544.00 | Duration: 17.09 | ETA: 22.21
+Trip ID: 5   | Type: REGULAR | Starts at RP #17  -> Ends at RP #18  | Start/End Time:  250.00 to  650.00 | Duration: 39.40 | ETA: 51.21
+Trip ID: 6   | Type: REGULAR | Starts at RP #19  -> Ends at RP #20  | Start/End Time:  238.00 to  638.00 | Duration: 24.70 | ETA: 32.11
+Trip ID: 7   | Type: REGULAR | Starts at RP #21  -> Ends at RP #22  | Start/End Time:  355.00 to  755.00 | Duration: 21.40 | ETA: 27.82
+Trip ID: 8   | Type: REGULAR | Starts at RP #23  -> Ends at RP #24  | Start/End Time:  316.00 to  716.00 | Duration: 40.22 | ETA: 52.29
+Trip ID: 9   | Type: REGULAR | Starts at RP #25  -> Ends at RP #26  | Start/End Time:  446.00 to  846.00 | Duration: 29.68 | ETA: 38.59
+Trip ID: 10  | Type: REGULAR | Starts at RP #27  -> Ends at RP #28  | Start/End Time:  448.00 to  848.00 | Duration: 23.02 | ETA: 29.93
+
+--- Deadhead Travel Times (t_ij) ---
+
+Depot → Trip:
+  Depot 11 -> Trip 1: t_ij = 67.42
+  Depot 11 -> Trip 2: t_ij = 35.01
+  Depot 11 -> Trip 3: t_ij = 54.01
+  Depot 11 -> Trip 4: t_ij = 25.50
+  Depot 11 -> Trip 5: t_ij = 46.14
+  Depot 11 -> Trip 6: t_ij = 61.62
+  Depot 11 -> Trip 7: t_ij = 32.25
+  Depot 11 -> Trip 8: t_ij = 54.20
+  Depot 11 -> Trip 9: t_ij = 52.40
+  Depot 11 -> Trip 10: t_ij = 28.16
+  Depot 12 -> Trip 1: t_ij = 37.70
+  Depot 12 -> Trip 2: t_ij = 54.12
+  Depot 12 -> Trip 3: t_ij = 19.03
+  Depot 12 -> Trip 4: t_ij = 42.11
+  Depot 12 -> Trip 5: t_ij = 36.06
+  Depot 12 -> Trip 6: t_ij = 28.64
+  Depot 12 -> Trip 7: t_ij = 26.40
+  Depot 12 -> Trip 8: t_ij = 16.40
+  Depot 12 -> Trip 9: t_ij = 26.17
+  Depot 12 -> Trip 10: t_ij = 28.64
+  Depot 21 -> Trip 1: t_ij = 67.42
+  Depot 21 -> Trip 2: t_ij = 35.01
+  Depot 21 -> Trip 3: t_ij = 54.01
+  Depot 21 -> Trip 4: t_ij = 25.50
+  Depot 21 -> Trip 5: t_ij = 46.14
+  Depot 21 -> Trip 6: t_ij = 61.62
+  Depot 21 -> Trip 7: t_ij = 32.25
+  Depot 21 -> Trip 8: t_ij = 54.20
+  Depot 21 -> Trip 9: t_ij = 52.40
+  Depot 21 -> Trip 10: t_ij = 28.16
+  Depot 22 -> Trip 1: t_ij = 37.70
+  Depot 22 -> Trip 2: t_ij = 54.12
+  Depot 22 -> Trip 3: t_ij = 19.03
+  Depot 22 -> Trip 4: t_ij = 42.11
+  Depot 22 -> Trip 5: t_ij = 36.06
+  Depot 22 -> Trip 6: t_ij = 28.64
+  Depot 22 -> Trip 7: t_ij = 26.40
+  Depot 22 -> Trip 8: t_ij = 16.40
+  Depot 22 -> Trip 9: t_ij = 26.17
+  Depot 22 -> Trip 10: t_ij = 28.64
+
+Trip → Trip:
+  Trip 1 -> Trip 2: t_ij = 47.07
+  Trip 1 -> Trip 3: t_ij = 44.55
+  Trip 1 -> Trip 4: t_ij = 42.19
+  Trip 1 -> Trip 5: t_ij = 24.52
+  Trip 1 -> Trip 6: t_ij = 6.08
+  Trip 1 -> Trip 7: t_ij = 43.66
+  Trip 1 -> Trip 8: t_ij = 12.65
+  Trip 1 -> Trip 9: t_ij = 13.42
+  Trip 1 -> Trip 10: t_ij = 42.06
+  Trip 2 -> Trip 1: t_ij = 23.43
+  Trip 2 -> Trip 3: t_ij = 39.12
+  Trip 2 -> Trip 4: t_ij = 49.04
+  Trip 2 -> Trip 5: t_ij = 34.00
+  Trip 2 -> Trip 6: t_ij = 17.09
+  Trip 2 -> Trip 7: t_ij = 43.83
+  Trip 2 -> Trip 8: t_ij = 15.65
+  Trip 2 -> Trip 9: t_ij = 22.02
+  Trip 2 -> Trip 10: t_ij = 43.86
+  Trip 3 -> Trip 1: t_ij = 46.32
+  Trip 3 -> Trip 2: t_ij = 55.01
+  Trip 3 -> Trip 4: t_ij = 41.11
+  Trip 3 -> Trip 5: t_ij = 40.36
+  Trip 3 -> Trip 6: t_ij = 37.11
+  Trip 3 -> Trip 7: t_ij = 18.97
+  Trip 3 -> Trip 8: t_ij = 24.04
+  Trip 3 -> Trip 9: t_ij = 32.65
+  Trip 3 -> Trip 10: t_ij = 23.09
+  Trip 4 -> Trip 1: t_ij = 37.58
+  Trip 4 -> Trip 2: t_ij = 5.66
+  Trip 4 -> Trip 3: t_ij = 62.01
+  Trip 4 -> Trip 5: t_ij = 18.03
+  Trip 4 -> Trip 6: t_ij = 36.67
+  Trip 4 -> Trip 7: t_ij = 44.20
+  Trip 4 -> Trip 8: t_ij = 38.47
+  Trip 4 -> Trip 9: t_ij = 30.00
+  Trip 4 -> Trip 10: t_ij = 38.01
+  Trip 5 -> Trip 1: t_ij = 60.21
+  Trip 5 -> Trip 2: t_ij = 31.58
+  Trip 5 -> Trip 3: t_ij = 47.10
+  Trip 5 -> Trip 4: t_ij = 19.42
+  Trip 5 -> Trip 6: t_ij = 54.04
+  Trip 5 -> Trip 7: t_ij = 25.00
+  Trip 5 -> Trip 8: t_ij = 46.23
+  Trip 5 -> Trip 9: t_ij = 44.82
+  Trip 5 -> Trip 10: t_ij = 20.40
+  Trip 6 -> Trip 1: t_ij = 27.66
+  Trip 6 -> Trip 2: t_ij = 17.12
+  Trip 6 -> Trip 3: t_ij = 50.91
+  Trip 6 -> Trip 4: t_ij = 15.65
+  Trip 6 -> Trip 5: t_ij = 5.83
+  Trip 6 -> Trip 7: t_ij = 35.85
+  Trip 6 -> Trip 8: t_ij = 25.32
+  Trip 6 -> Trip 9: t_ij = 17.12
+  Trip 6 -> Trip 10: t_ij = 30.36
+  Trip 7 -> Trip 1: t_ij = 44.94
+  Trip 7 -> Trip 2: t_ij = 22.80
+  Trip 7 -> Trip 3: t_ij = 42.15
+  Trip 7 -> Trip 4: t_ij = 7.21
+  Trip 7 -> Trip 5: t_ij = 24.35
+  Trip 7 -> Trip 6: t_ij = 38.95
+  Trip 7 -> Trip 8: t_ij = 32.25
+  Trip 7 -> Trip 9: t_ij = 29.73
+  Trip 7 -> Trip 10: t_ij = 15.00
+  Trip 8 -> Trip 1: t_ij = 58.19
+  Trip 8 -> Trip 2: t_ij = 39.82
+  Trip 8 -> Trip 3: t_ij = 34.01
+  Trip 8 -> Trip 4: t_ij = 24.70
+  Trip 8 -> Trip 5: t_ij = 40.11
+  Trip 8 -> Trip 6: t_ij = 50.57
+  Trip 8 -> Trip 7: t_ij = 12.65
+  Trip 8 -> Trip 9: t_ij = 41.79
+  Trip 8 -> Trip 10: t_ij = 10.63
+  Trip 9 -> Trip 1: t_ij = 43.19
+  Trip 9 -> Trip 2: t_ij = 15.00
+  Trip 9 -> Trip 3: t_ij = 49.19
+  Trip 9 -> Trip 4: t_ij = 1.00
+  Trip 9 -> Trip 5: t_ij = 21.40
+  Trip 9 -> Trip 6: t_ij = 38.60
+  Trip 9 -> Trip 7: t_ij = 29.07
+  Trip 9 -> Trip 8: t_ij = 34.48
+  Trip 9 -> Trip 10: t_ij = 22.67
+  Trip 10 -> Trip 1: t_ij = 34.71
+  Trip 10 -> Trip 2: t_ij = 47.13
+  Trip 10 -> Trip 3: t_ij = 21.54
+  Trip 10 -> Trip 4: t_ij = 35.06
+  Trip 10 -> Trip 5: t_ij = 29.83
+  Trip 10 -> Trip 6: t_ij = 25.50
+  Trip 10 -> Trip 7: t_ij = 22.02
+  Trip 10 -> Trip 8: t_ij = 12.37
+  Trip 10 -> Trip 9: t_ij = 21.10
+
+Trip → Depot:
+  Trip 1 -> Depot 11: t_ij = 65.07
+  Trip 1 -> Depot 12: t_ij = 25.71
+  Trip 1 -> Depot 21: t_ij = 65.07
+  Trip 1 -> Depot 22: t_ij = 25.71
+  Trip 2 -> Depot 11: t_ij = 69.63
+  Trip 2 -> Depot 12: t_ij = 20.40
+  Trip 2 -> Depot 21: t_ij = 69.63
+  Trip 2 -> Depot 22: t_ij = 20.40
+  Trip 3 -> Depot 11: t_ij = 50.99
+  Trip 3 -> Depot 12: t_ij = 10.44
+  Trip 3 -> Depot 21: t_ij = 50.99
+  Trip 3 -> Depot 22: t_ij = 10.44
+  Trip 4 -> Depot 11: t_ij = 39.32
+  Trip 4 -> Depot 12: t_ij = 51.62
+  Trip 4 -> Depot 21: t_ij = 39.32
+  Trip 4 -> Depot 22: t_ij = 51.62
+  Trip 5 -> Depot 11: t_ij = 8.06
+  Trip 5 -> Depot 12: t_ij = 48.70
+  Trip 5 -> Depot 21: t_ij = 8.06
+  Trip 5 -> Depot 22: t_ij = 48.70
+  Trip 6 -> Depot 11: t_ij = 41.15
+  Trip 6 -> Depot 12: t_ij = 38.91
+  Trip 6 -> Depot 21: t_ij = 41.15
+  Trip 6 -> Depot 22: t_ij = 38.91
+  Trip 7 -> Depot 11: t_ij = 22.67
+  Trip 7 -> Depot 12: t_ij = 38.12
+  Trip 7 -> Depot 21: t_ij = 22.67
+  Trip 7 -> Depot 22: t_ij = 38.12
+  Trip 8 -> Depot 11: t_ij = 20.00
+  Trip 8 -> Depot 12: t_ij = 38.59
+  Trip 8 -> Depot 21: t_ij = 20.00
+  Trip 8 -> Depot 22: t_ij = 38.59
+  Trip 9 -> Depot 11: t_ij = 25.08
+  Trip 9 -> Depot 12: t_ij = 43.10
+  Trip 9 -> Depot 21: t_ij = 25.08
+  Trip 9 -> Depot 22: t_ij = 43.10
+  Trip 10 -> Depot 11: t_ij = 50.57
+  Trip 10 -> Depot 12: t_ij = 7.07
+  Trip 10 -> Depot 21: t_ij = 50.57
+  Trip 10 -> Depot 22: t_ij = 7.07
+
+--- SOLUTION ---
+Optimal solution found with total cost: 1909.32
+Total vehicles used: 2 out of 2
+ - Vehicle D11_V1 schedule: O11 (Time: 0.00, E_bar: 300.0) -> T4 (Time: 275.24 (E_pre: 266.9, G: 22.2, E_bar: 244.6)) -> T2 (Time: 297.99 (E_pre: 237.3, G: 73.1, E_bar: 164.2)) -> T1 (Time: 377.64 (E_pre: 133.7, G: 16.6, E_bar: 117.1)) -> T6 (Time: 396.53 (E_pre: 109.2, G: 32.1, E_bar: 77.1)) -> C1 (Time: 435.37 (E_pre: 58.7, G: -241.3, E_bar: 300.0)) -> T9 (Time: 446.00 (E_pre: 286.2, G: 38.6, E_bar: 247.6)) -> T5 (Time: 497.08 (E_pre: 219.8, G: 51.2, E_bar: 168.6)) -> D11 (Time: 10000.00 (E_pre: 158.1, G: -300.0, E_bar: 0.0))
+ - Vehicle D12_V1 schedule: O12 (Time: 0.00, E_bar: 300.0) -> T8 (Time: 358.73 (E_pre: 278.7, G: 52.3, E_bar: 226.4)) -> T7 (Time: 411.60 (E_pre: 209.9, G: 27.8, E_bar: 182.1)) -> T10 (Time: 448.00 (E_pre: 162.6, G: 29.9, E_bar: 132.7)) -> T3 (Time: 492.56 (E_pre: 104.7, G: 12.8, E_bar: 91.9)) -> D12 (Time: 10000.00 (E_pre: 78.3, G: -300.0, E_bar: 0.0))
+
+--- SOLUTION VARIABLES ---
+--- Active Arc Variables (x[k,i,j] = 1) ---
+  x[D11_V1, C1, T9] = 1 (Cost: 106.3014581273465, Cons: 13.8)
+  x[D11_V1, O11, T4] = 1 (Cost: 254.95097567963924, Cons: 33.1)
+  x[D11_V1, T1, T6] = 1 (Cost: 60.82762530298219, Cons: 7.9)
+  x[D11_V1, T2, T1] = 1 (Cost: 234.30749027719963, Cons: 30.5)
+  x[D11_V1, T4, T2] = 1 (Cost: 56.568542494923804, Cons: 7.4)
+  x[D11_V1, T5, D11] = 1 (Cost: 80.62257748298549, Cons: 10.5)
+  x[D11_V1, T6, C1] = 1 (Cost: 141.4213562373095, Cons: 18.4)
+  x[D11_V1, T9, T5] = 1 (Cost: 214.00934559032694, Cons: 27.8)
+  x[D12_V1, O12, T8] = 1 (Cost: 164.01219466856728, Cons: 21.3)
+  x[D12_V1, T10, T3] = 1 (Cost: 215.40659228538016, Cons: 28.0)
+  x[D12_V1, T3, D12] = 1 (Cost: 104.40306508910551, Cons: 13.6)
+  x[D12_V1, T7, T10] = 1 (Cost: 150.0, Cons: 19.5)
+  x[D12_V1, T8, T7] = 1 (Cost: 126.49110640673518, Cons: 16.4)
+
+--- Node Start Times (T[k,i] > 0) ---
+  T[D11_V1, C1] = 435.37
+  T[D11_V1, D11] = 10000.00
+  T[D11_V1, T1] = 377.64
+  T[D11_V1, T2] = 297.99
+  T[D11_V1, T4] = 275.24
+  T[D11_V1, T5] = 497.08
+  T[D11_V1, T6] = 396.53
+  T[D11_V1, T9] = 446.00
+  T[D12_V1, D12] = 10000.00
+  T[D12_V1, T10] = 448.00
+  T[D12_V1, T3] = 492.56
+  T[D12_V1, T7] = 411.60
+  T[D12_V1, T8] = 358.73
+
+--- Incurred Waiting Costs (w[k,i,j] > 0) ---
+
+--- Energy Levels (E_pre, G, E_bar) ---
+  D11_V1, C1: E_pre=58.7 | G=-241.3 | E_bar=300.0 (Min/Max: 10.0/300.0)
+  D11_V1, O11: E_pre=0.0 | G=-300.0 | E_bar=300.0 (Min/Max: 10.0/300.0)
+  D11_V1, T1: E_pre=133.7 | G=16.6 | E_bar=117.1 (Min/Max: 10.0/300.0)
+  D11_V1, T2: E_pre=237.3 | G=73.1 | E_bar=164.2 (Min/Max: 10.0/300.0)
+  D11_V1, T4: E_pre=266.9 | G=22.2 | E_bar=244.6 (Min/Max: 10.0/300.0)
+  D11_V1, T5: E_pre=219.8 | G=51.2 | E_bar=168.6 (Min/Max: 10.0/300.0)
+  D11_V1, T6: E_pre=109.2 | G=32.1 | E_bar=77.1 (Min/Max: 10.0/300.0)
+  D11_V1, T9: E_pre=286.2 | G=38.6 | E_bar=247.6 (Min/Max: 10.0/300.0)
+  D12_V1, O12: E_pre=0.0 | G=-300.0 | E_bar=300.0 (Min/Max: 10.0/300.0)
+  D12_V1, T10: E_pre=162.6 | G=29.9 | E_bar=132.7 (Min/Max: 10.0/300.0)
+  D12_V1, T3: E_pre=104.7 | G=12.8 | E_bar=91.9 (Min/Max: 10.0/300.0)
+  D12_V1, T7: E_pre=209.9 | G=27.8 | E_bar=182.1 (Min/Max: 10.0/300.0)
+  D12_V1, T8: E_pre=278.7 | G=52.3 | E_bar=226.4 (Min/Max: 10.0/300.0)
+
+--- Charging Completion Times (CT[k, j] > 0) ---
+  CT[D11_V1, C1] = 459.50
+
+--- Charging Order Variables (Y[j, k1, k2] = 1) ---
+  Y[C1, D11_V1, D12_V1] = 1
