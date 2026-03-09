@@ -1,9 +1,6 @@
-"""
-Stateful rolling-horizon orchestrator.
-
-Runs clusters sequentially and propagates fleet state using
-solver-produced bus_end_states_*.json files.
-"""
+# National Technical University of Athens
+# Railways & Transport Lab
+# Dimitrios Rizopoulos, Konstantinos Gkiotsalitis
 
 from __future__ import annotations
 

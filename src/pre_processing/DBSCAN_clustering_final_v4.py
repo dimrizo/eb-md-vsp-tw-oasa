@@ -1,19 +1,6 @@
-
 # National Technical University of Athens
 # Railways & Transport Lab
-#
-# DBSCAN clustering with CHAIN-FEASIBLE neighborhoods:
-# - A and B are neighbors only if there exists a chronological order (A->B or B->A)
-#   such that:
-#     (1) deadhead time gap (next.start - prev.end) is NONNEGATIVE and <= TEMPORAL_EPS_MIN (after normalization)
-#     (2) deadhead distance (prev.end -> next.start) <= SPATIAL_EPS_METERS (after normalization)
-# - IMPORTANT: time and distance are evaluated in the SAME chosen direction (no mixing).
-#
-# This makes clusters much more "chain-y" than using abs() gaps or min() across directions independently.
-#
-# Output:
-# - clusters are exported as GTFS trips.txt subsets
-# - clusters_summary.csv contains size and time span
+# Dimitrios Rizopoulos, Konstantinos Gkiotsalitis
 
 import os
 import sys

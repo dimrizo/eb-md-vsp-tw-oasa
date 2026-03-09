@@ -1,3 +1,7 @@
+# National Technical University of Athens
+# Railways & Transport Lab
+# Dimitrios Rizopoulos, Konstantinos Gkiotsalitis
+
 import os
 import sys
 import datetime
