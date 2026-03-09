@@ -1,0 +1,777 @@
+import os
+import sys
+import datetime
+import time
+import random
+import json
+
+import gurobipy as gp
+from gurobipy import GRB
+from scipy.spatial import distance
+
+# --- Add parent directory to system path ---
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+from utilities.instance_generator import GkiotsalitisInstanceGenerator, ProblemInstance
+import plotting.plotting_utils_eb as plotting_utils_eb
+
+# --- Constants for the Energy Buffer (EB) Model Extension ---
+PHI_MAX = 300.0                         # Max energy level
+PHI_MIN = 120.0                         # Min required energy level
+THETA_FACTOR = 1                        # in kWh/meter
+SMALL_M = 0.00001
+BIG_M = 1000000
+AVG_U_METERS_PER_MINUTE = 800000        # Average speed: 26,000 meters / 60 minutes = 433.33 meters/minute
+CHARGING_RATE_KWH_PER_MINUTE = 3.0      # Charging rate: 180 kWh / 60 minutes = 3 kWh/minute
+STARTING_BUS_PENALTY = 0
+TRAVEL_COST = 10.0
+
+# --- Main Solver Function ---
+
+def solve_md_vsp_tw_from_instance(instance: ProblemInstance, waiting_cost_lambda: float = 2.0):
+    """
+    Solves the MD-VSP-TW with an Energy Buffer extension and returns the report.
+    """
+    model = gp.Model("MD-VSP-TW-EB")
+
+    model.setParam('OutputFlag', 1)
+
+    # (Instance processing logic remains unchanged)
+    vehicles, vehicle_to_depot = [], {}
+    for depot in instance.depots:
+        for i in range(1, depot.vehicle_count + 1):
+            vehicle_id = f"D{depot.id}_V{i}"; vehicles.append(vehicle_id)
+            vehicle_to_depot[vehicle_id] = depot
+
+    trips_map = {f"T{trip.id}": trip for trip in instance.trips}
+    trip_ids = list(trips_map.keys())
+
+    # Give each charging station a unique ID (e.g., 'C1', 'C2', ...)
+    charging_station_map = {f"C{i+1}": cs for i, cs in enumerate(instance.charging_stations)}
+    charging_station_ids = list(charging_station_map.keys())
+    charging_station_set = set(charging_station_ids)
+    internal_nodes = trip_ids + charging_station_ids
+    
+    # -------------------------------------
+
+    origin_nodes = {v_id: f"O{vehicle_to_depot[v_id].id}" for v_id in vehicles}
+    dest_nodes = {v_id: f"D{vehicle_to_depot[v_id].id}" for v_id in vehicles}
+
+    all_nodes = (
+        set(trip_ids)
+        | set(charging_station_ids)
+        | set(origin_nodes.values())
+        | set(dest_nodes.values())
+    )
+
+    arc_starting_nodes = (
+            set(trip_ids)
+            | set(charging_station_ids)
+            | set(origin_nodes.values())
+        )
+    
+    target_nodes = (
+        set(trip_ids)
+        | set(charging_station_ids)
+        | set(dest_nodes.values())
+    )
+
+    # ============================================================
+    # Arcs and costs – using pure Euclidean distances
+    # ============================================================
+
+    arcs, base_costs, elapsed_times, energy_consumption = {}, {}, {}, {}
+
+    for k in vehicles:
+        depot = vehicle_to_depot[k]
+        o_node = origin_nodes[k]
+        d_node = dest_nodes[k]
+
+        # --------------------------------------------------------
+        # O_k → Trip_i
+        # --------------------------------------------------------
+        for trip_id, trip in trips_map.items():
+            l_i, u_i = trip.start_time_window
+            
+            dist_m = distance.euclidean([depot.location.y, depot.location.x], [trip.start_point.y, trip.start_point.x])
+            t_oi = dist_m/AVG_U_METERS_PER_MINUTE
+
+            # === VALID INEQUALITY 1 (Depot→Trip): t_oi <= u_i ===
+            # (CAN COMMENT OUT THIS "if" TO REMOVE THE VALID INEQUALITY)
+            if t_oi <= u_i:
+                arc = (k, o_node, trip_id)
+                arcs[arc] = 1
+                base_costs[arc] = TRAVEL_COST * t_oi + STARTING_BUS_PENALTY
+                elapsed_times[arc] = t_oi
+                energy_consumption[arc] = dist_m * THETA_FACTOR
+
+        # --------------------------------------------------------
+        # Trip_i → Trip_j
+        # --------------------------------------------------------
+        for trip1_id, trip1 in trips_map.items():
+            l_i, u_i = trip1.start_time_window
+            dur_i = trip1.end_time - trip1.start_time
+
+            for trip2_id, trip2 in trips_map.items():
+                if trip1_id == trip2_id:
+                    continue
+
+                l_j, u_j = trip2.start_time_window
+
+                dist_m = distance.euclidean([trip1.end_point.y, trip1.end_point.x], [trip2.start_point.y, trip2.start_point.x])
+                t_ij = dist_m/AVG_U_METERS_PER_MINUTE
+
+                # === VALID INEQUALITY 1 (Trip→Trip): l_i + dur_i + t_ij <= u_j ===
+                # (CAN COMMENT OUT THIS "if" TO REMOVE THE VALID INEQUALITY)
+                if l_i + dur_i + t_ij <= u_j:
+                    arc = (k, trip1_id, trip2_id)
+                    arcs[arc] = 1
+                    base_costs[arc] = TRAVEL_COST * t_ij
+                    print("TRIP TO TRIP COST:")
+                    print(base_costs[arc])
+                    elapsed_times[arc] = t_ij
+                    energy_consumption[arc] = dist_m * THETA_FACTOR
+
+        # --------------------------------------------------------
+        # Trip_i → D_k
+        # --------------------------------------------------------
+        for trip_id, trip in trips_map.items():
+    
+            dist_m = distance.euclidean([trip.end_point.y, trip.end_point.x], [depot.location.y, depot.location.x])
+            t_id = dist_m/AVG_U_METERS_PER_MINUTE
+
+            # (NO time-window VI from Set 1 applies here)
+            arc = (k, trip_id, d_node)
+            arcs[arc] = 1
+            base_costs[arc] = TRAVEL_COST * t_id
+            elapsed_times[arc] = t_id
+            energy_consumption[arc] = dist_m * THETA_FACTOR
+
+        # --------------------------------------------------------
+        # Trip_i → Charging_c
+        # --------------------------------------------------------
+        for trip_id, trip in trips_map.items():
+            l_i, u_i = trip.start_time_window
+            dur_i = trip1.end_time - trip1.start_time
+
+            for cs_id, cs_obj in charging_station_map.items():
+
+                # You may define cs_obj.time_window; otherwise use full horizon:
+                l_c, u_c = getattr(cs_obj, "time_window", (0, float("inf")))
+
+                dist_m = distance.euclidean([trip.end_point.y, trip.end_point.x], [cs_obj.location.y, cs_obj.location.x])
+                t_ic = dist_m/AVG_U_METERS_PER_MINUTE
+
+                # === VALID INEQUALITY 1 (Trip→Charging): l_i + dur_i + t_ic <= u_c ===
+                # (CAN COMMENT OUT THIS "if" TO REMOVE THE VALID INEQUALITY)
+                # if l_i + dur_i + t_ic <= u_c:
+                arc = (k, trip_id, cs_id)
+                arcs[arc] = 1
+                base_costs[arc] = (TRAVEL_COST * t_ic)
+                print("TRIP TO CHARGER COST:")
+                print(base_costs[arc])
+                elapsed_times[arc] = t_ic
+                energy_consumption[arc] = dist_m * THETA_FACTOR
+
+        # --------------------------------------------------------
+        # Charging_c → Trip_j
+        # --------------------------------------------------------
+        for cs_id, cs_obj in charging_station_map.items():
+
+            # Again: if no window exists, assume full availability
+            l_c, u_c = getattr(cs_obj, "time_window", (0, float("inf")))
+            tau_c = getattr(cs_obj, "min_charge_time", 0)  # minimal charging duration
+
+            for trip_id, trip in trips_map.items():
+                l_j, u_j = trip.start_time_window
+
+                t_cj = distance.euclidean([cs_obj.location.y, cs_obj.location.x], [trip.start_point.y, trip.start_point.x])
+
+                # === VALID INEQUALITY 1 (Charging→Trip):
+                #     l_c + τ_c + t_cj <= u_j
+                # (CAN COMMENT OUT THIS "if" TO REMOVE THE VALID INEQUALITY)
+                # if l_c + tau_c + t_cj <= u_j:
+                arc = (k, cs_id, trip_id)
+                arcs[arc] = 1
+                base_costs[arc] = TRAVEL_COST * t_cj
+                elapsed_times[arc] = t_cj
+                energy_consumption[arc] = dist_m * THETA_FACTOR
+
+    # --- Gurobi Variables ---
+    x = model.addVars(arcs.keys(), vtype=GRB.BINARY, name="x")
+
+    time_vars_keys = set((k, i) for k, i, j in arcs.keys()) | set((k, j) for k, i, j in arcs.keys())
+
+    T = model.addVars(time_vars_keys, vtype=GRB.CONTINUOUS, lb=0.0, name="T")
+    w = model.addVars(arcs.keys(), vtype=GRB.CONTINUOUS, lb=0.0, name="w")
+
+    starting_node_keys = set((k, i) for k in vehicles for i in origin_nodes.values() for j in all_nodes if (k, i, j) in arcs.keys())
+    w_o = model.addVars(starting_node_keys, vtype=GRB.CONTINUOUS, lb=0.0, name="w_o")
+
+    # --- Energy Variables ---
+    energy_vars_keys = set((k, i) for k, i in time_vars_keys)
+    E_pre = model.addVars(energy_vars_keys, vtype=GRB.CONTINUOUS, lb=0.0, name="e")
+    E_bar = model.addVars(energy_vars_keys, vtype=GRB.CONTINUOUS, lb=0.0, name="ebar", ub=PHI_MAX)
+
+    # g_i^k can be NEGATIVE (charging)
+    G = model.addVars(energy_vars_keys, vtype=GRB.CONTINUOUS, lb=-PHI_MAX, name="g", ub=PHI_MAX)
+
+    # CT_j^k: Charging completion time for vehicle k at station j
+    ct_keys = [(k, j) for k in vehicles for j in charging_station_ids]
+    CT = model.addVars(ct_keys, vtype=GRB.CONTINUOUS, lb=0.0, name="CT")
+
+    # y_j^{k1, k2}: Binary to order vehicles at charging station j
+    y_keys = [(j, k1, k2) for j in charging_station_ids for k1 in vehicles for k2 in vehicles if k1 != k2]
+    Y = model.addVars(y_keys, vtype=GRB.BINARY, name="Y")
+
+    tau = model.addVars(ct_keys, vtype=gp.GRB.CONTINUOUS, lb=0, ub=1440, name='tau') #required time period to recharge vehicle k at charging event i
+
+    b_s = {}
+    for vehicle in vehicles:
+        b_s[vehicle] = 1
+
+    availability = [0.0] * len(vehicles)
+    buses_state = [True] * len(vehicles)
+
+    lambda_1 = waiting_cost_lambda
+    lambda_2 = waiting_cost_lambda * 200
+    lambda_3 = 0
+
+    # Objective function (32)
+    objective = gp.quicksum(base_costs[k, i, j] * x[k, i, j] for k, i, j in arcs.keys()) + \
+                gp.quicksum(lambda_1 * w[k, i, j] for k, i, j in arcs.keys() if (j in trip_ids) or (j in charging_station_ids)) + \
+                gp.quicksum(lambda_2 * b_s[k] * x[k, i, j] for k, i, j in arcs.keys() if i in origin_nodes.values()) + \
+                gp.quicksum(lambda_3 * w_o[k, i] for k, i in starting_node_keys)
+    model.setObjective(objective, GRB.MINIMIZE)
+
+    print("\r")
+    print("Vehicle fleet available for this problem instance: ")
+    for row in vehicles:
+        print(row)
+
+    # Constraint (#33)
+    # model.addConstrs((x.sum('*', '*', j) == 1 for j in trip_ids), name="CoverTrip")
+    for j in trip_ids:
+        model.addConstr(gp.quicksum(x[k, i, j] for k in vehicles for i in all_nodes if (k, i, j) in arcs.keys()) == 1, name="CoverTrip")
+    
+    for k in vehicles:
+        for j in charging_station_ids:
+            model.addConstr(gp.quicksum(x[k, i, j] for i in trip_ids if (k, i, j) in arcs.keys()) <= 1, name=f"SingleUseCharger_{j}")
+
+    # Mathematical expression (34)
+    model.addConstrs((x.sum(k, '*', v) - x.sum(k, v, '*') == 0 for k in vehicles for v in internal_nodes), name="FlowConservation")
+
+    # Mathematical expression (35)
+    model.addConstrs((x.sum(k, origin_nodes[k], '*') == x.sum(k, '*', dest_nodes[k]) for k in vehicles), name="ReturnToDepot")
+
+    # Constraint (#36)
+    # model.addConstrs((x.sum(k, origin_nodes[k], '*') <= 1 for k in vehicles), name="StartOnce")
+    for k in vehicles:
+        model.addConstr(gp.quicksum(x[k, i, j] for i in origin_nodes for j in trip_ids if (k, i, j) in arcs.keys()) <= 1, name="StartOnce")          
+
+    # Mathematical expression (37)
+    depot_to_vehicles = {}
+    for depot in instance.depots:
+        depot_id_str = f"O{depot.id}"
+        depot_to_vehicles[depot_id_str] = [
+            v_id for v_id in vehicles if origin_nodes[v_id] == depot_id_str
+        ]
+
+    depots_map = {depot.id: depot for depot in instance.depots}
+    for origin_node_id, vehicles_in_depot in depot_to_vehicles.items():
+        depot_id_num = int(origin_node_id[1:])
+        depot_obj = depots_map[depot_id_num]
+
+        # Constraint (#37)
+        model.addConstr(
+            gp.quicksum(x[k, origin_node_id, j] for k in vehicles_in_depot for j in trip_ids if (k, origin_node_id, j) in x) <= depot_obj.vehicle_count,
+            name=f"DepotCapacity_{origin_node_id}"
+        )
+
+    # ==================================================
+    # Time-window constraints
+    # ==================================================
+
+    for k, i in T.keys():
+
+        # Constraint (#38a)
+        # Trip nodes (T#)
+        if i in trips_map:
+            trip = trips_map[i]
+            T[k, i].lb, T[k, i].ub = trip.start_time_window[0], trip.start_time_window[1]
+
+        # Constraint (#38b)
+        # Charging station nodes (C#)
+        elif i in charging_station_set:
+            cs_obj = charging_station_map[i]
+            # T[k, i].lb, T[k, i].ub = cs_obj.time_window[0], cs_obj.time_window[1]
+            T[k, i].lb, T[k, i].ub = 0, BIG_M
+
+        # Constraint (#39)
+        # Depot nodes (O#, D#)
+        elif i.startswith("O") or i.startswith("D"):
+            T[k, i].lb, T[k, i].ub = 0, BIG_M
+
+    # ==================================================
+    # Time continuity
+    # ==================================================
+
+    for k, i, j in arcs.keys():
+        
+        t_ij = elapsed_times[k, i, j]
+
+        if i in trip_ids:
+            trip = trips_map[i]
+            trip_service = trip.end_time - trip.start_time
+        elif i in charging_station_ids:
+            trip_service = tau[k, i]
+        else:
+            trip_service = 0
+
+        # Time propagation — unchanged
+        model.addConstr(T[k, j] >= T[k, i] + trip_service + t_ij - BIG_M*(1 - x[k, i, j]), name=f"TimeProp_{k}_{i}_{j}")
+
+        if j.startswith("D"):
+            model.addConstr(T[k, j] <= T[k, i] + trip_service + t_ij + BIG_M*(1 - x[k, i, j]), name=f"TimeProp_{k}_{i}_{j}_D")
+
+        # Waiting constraints for O, V, F - edo orizetai to waiting time
+        if (j in trip_ids) or (j in charging_station_ids) or (j in origin_nodes.values()):
+            
+            model.addConstr(w[k,i,j] >= T[k,j] - (T[k, i] + trip_service + t_ij) - BIG_M*(1 - x[k, i, j]))
+
+            # model.addConstr(w[k,i,j] <= T[k,j] - (T[k, i] + trip_service + t_ij) + BIG_M*(1 - x[k, i, j]))
+
+            # model.addConstr(w[k,i,j] <= BIG_M * x[k, i, j])
+
+        if i in origin_nodes.values():
+            idx = vehicles.index(k)
+            model.addConstr(w_o[k, i] >= (1-buses_state[idx])*(T[k, i] - availability[idx]) - BIG_M*(1 - x[k, i, j]))
+
+    # ==================================================
+    # Energy Consumption constraints
+    # ==================================================
+    for k in vehicles:
+        o_node = origin_nodes[k]
+        d_node = dest_nodes[k]
+
+        # Constraint (#44)
+        model.addConstr(E_bar[k, o_node] == PHI_MAX, name=f"EB_StartMax_{k}")
+
+        # Nodes for this vehicle
+        nodes_for_k = [i for k_i, i in E_pre.keys() if k_i == k]
+
+        for i in internal_nodes:
+            # Constraint (#45)
+            model.addConstr(E_bar[k, i] == E_pre[k, i] - G[k, i], name=f"EB_BufferUpdate_{k}_{i}")
+
+        for i in arc_starting_nodes: 
+            for j in target_nodes: 
+                
+                if (k, i, j) in arcs.keys(): 
+            
+                    theta_ij = energy_consumption[(k, i, j)]
+                
+                    # Constraint (#46) 
+                    model.addConstr(E_pre[k, j] >= E_bar[k, i] - theta_ij - BIG_M * (1 - x[k, i, j]), name=f"EB_PropLB_{k}_{i}_{j}") 
+                
+                    # Constraint (#47) 
+                    model.addConstr(E_pre[k, j] <= E_bar[k, i] - theta_ij + BIG_M * (1 - x[k, i, j]), name=f"EB_PropUB_{k}_{i}_{j}")
+
+    for k in vehicles:
+        o_node = origin_nodes[k]
+        d_node = dest_nodes[k]
+
+        nodes_for_k = [i for k_i, i in E_pre.keys() if k_i == k]
+
+        for i in nodes_for_k:
+            if i.startswith('O'):
+                continue
+
+            # Trip nodes: charging/consumption based on ETA
+            if i in trip_ids:
+                trip_eta = trips_map[i].eta
+                
+                # Constraint (#48)
+                model.addConstr(G[k, i] == trip_eta, name=f"EB_TripEta_{k}_{i}")
+
+            # Charging stations: refill to PHI_MAX
+            if i in charging_station_set:
+                # Constraint (#49)
+                model.addConstr(G[k, i] == E_pre[k, i] - PHI_MAX, name=f"EB_DepotRefillLogic_{k}_{i}")
+
+            # Constraint (#50) - Min energy level before refill
+            model.addConstr(E_pre[k, i] >= PHI_MIN, name=f"EB_MinLevelPre_{k}_{i}")
+
+    # ==================================================
+    # Continuous time constraints for charging stations
+    # ==================================================
+
+    # τ[k,j] = (E_bar[k,j] - E_pre[k,j]) / CHARGING_RATE_KWH_PER_MINUTE
+    for k in vehicles:
+        for j in charging_station_set:
+            for i in trip_ids:
+                if (k, i, j) in arcs.keys():
+                    model.addConstr(tau[k, j] >= ((E_bar[k, j] - E_pre[k, j]) / CHARGING_RATE_KWH_PER_MINUTE) - BIG_M * (1 - x[k, i, j]), name=f"TauDef_{k}_{j}")
+                    model.addConstr(tau[k, j] <= ((E_bar[k, j] - E_pre[k, j]) / CHARGING_RATE_KWH_PER_MINUTE) + BIG_M * (1 - x[k, i, j]), name=f"TauDef_{k}_{j}")
+
+    for k in vehicles:
+        for j in charging_station_set:
+            for i in trip_ids:
+                if (k, i, j) in arcs.keys():
+                    
+                    # Constraint (#51)
+                    # model.addConstr(CT[k, j] <= T[k, j] + tau[k, j] + BIG_M * (1 - x[k, i, j]), name=f"ChargeCompTime_UB1_{k}_{i}_{j}")
+                    
+                    # Constraint (#52)
+                    model.addConstr(CT[k, j] >= T[k, j] + tau[k, j] - BIG_M * (1 - x[k, i, j]), name=f"ChargeCompTime_LB1_{k}_{i}_{j}")
+
+    # for k in vehicles:
+    #     for j in charging_station_set:
+    #         model.addConstr(CT[k, j] <= BIG_M * gp.quicksum(x[k, i, j] for i in trip_ids if (k, i, j) in arcs.keys()), name=f"ChargeCompTime_zero_{k}_{j}") # Constraint (53)
+
+    # Charging order constraints
+    for j in charging_station_ids:
+        for k1 in vehicles:
+            for k2 in vehicles:
+                if k1 != k2:
+                    # Constraint (#53)
+                    model.addConstr(
+                        T[k1, j] <= T[k2, j] + BIG_M * Y[j, k1, k2], name=f"ChargeOrder_Arr_Time_1_{j}_{k1}_{k2}")
+                    # Constraint (#54)
+                    model.addConstr(
+                        T[k1, j] >= CT[k2, j] + SMALL_M - BIG_M * (1 - Y[j, k1, k2]), name=f"ChargeOrder_Comp_Time_2_{j}_{k1}_{k2}")
+
+    # Constraint for zero-ing Y - turns out that it is optional                
+    # for j in charging_station_ids:
+    #     for k1 in vehicles:
+    #         for k2 in vehicles:
+    #             if k1 != k2:
+    #                 model.addConstr(Y[j, k1, k2] <= BIG_M * gp.quicksum(x[k1, i, j] for i in trip_ids if (k, i, j) in arcs.keys()) , name=f"zero_Y_1{k}_{j}") # Constraint (53)
+    #                 model.addConstr(Y[j, k1, k2] <=  BIG_M * gp.quicksum(x[k2, i, j] for i in trip_ids if (k, i, j) in arcs.keys()), name=f"zero_Y_2{k}_{j}") # Constraint (53)
+
+    # ============================================================
+    # Valid Inequalities
+    # ============================================================
+
+    # Set 1 is included in the arc generation process above, 
+    # Set 3 can not be included in this model because of the continuous charging time horizon.
+
+    # ============================================================
+    # Valid Inequality Set 2: SOC reachability from trip j
+    # ============================================================
+
+    # Precompute min energy needed from each trip to nearest charger
+    min_energy_to_cs = {}
+
+    for trip_id, trip in trips_map.items():
+        best = float("inf")
+        for cs_id, cs in charging_station_map.items():
+            dist = distance.euclidean([trip.end_point.y, trip.end_point.x], [cs.location.y, cs.location.x])
+            energy = dist * THETA_FACTOR
+            if energy < best:
+                best = energy
+        min_energy_to_cs[trip_id] = best
+
+    for k in vehicles:
+        for trip_id in trip_ids:
+
+            theta_min = min_energy_to_cs[trip_id]
+
+            # Set 2 inequality:
+            # E_bar[k, trip] >= PHI_MIN + (energy required to reach nearest charger)
+            model.addConstr(E_bar[k, trip_id] >= PHI_MIN + theta_min, name=f"VI2_SoCReach_{k}_{trip_id}")
+    
+    # ============================================================
+    # Valid Inequality Set 4: Time tightening constraints
+    # ============================================================
+
+    for (k, i, j) in arcs.keys():
+
+        # elapsed travel time
+        t_ij = elapsed_times[(k, i, j)]
+
+        if i in trip_ids:
+            trip = trips_map[i]
+            trip_service = trip.end_time - trip.start_time
+        elif i in charging_station_ids:
+            trip_service = tau[k, i]
+        else:
+            trip_service = 0
+
+        # Only tighten when j is a trip or a charging station with a known time window
+        if j in trip_ids:
+            # Latest allowable start time at trip j
+            u_j = trips_map[j].start_time_window[1]
+
+            # Set 4 inequality:
+            # T[k,i] + t_tilde + t_ij <= u_j + BIG_M*(1 - x[k,i,j])
+            model.addConstr(T[k, i] + trip_service + t_ij <= u_j + BIG_M*(1 - x[k, i, j]), name=f"VI4_timeTrip_{k}_{i}_{j}")
+
+        # elif j in charging_station_set:
+        #     # charging stations also have a time window (earliest, latest)
+        #     u_j = charging_station_map[j].time_window[1]
+
+        #     # analogous Set 4 inequality for chargers:
+        #     model.addConstr(T[k, i] + t_tilde + t_ij <= u_j + BIG_M*(1 - x[k, i, j]), name=f"VI4_timeCS_{k}_{i}_{j}")
+
+    # ============================================================
+    # Valid Inequality Set 5: Conflicting-arc inequalities
+    # - For each vehicle k and internal node v:
+    #     * at most one outgoing arc
+    #     * at most one incoming arc
+    #   This strengthens the LP relaxation beyond flow conservation.
+    # ============================================================
+
+    # Outgoing-arc conflicts: sum_j x[k, v, j] ≤ 1
+    for k in vehicles:
+        for v in trip_ids:
+            outgoing_arcs = [(k, v, j) for (_k, i, j) in arcs.keys() if _k == k and i == v]
+            if outgoing_arcs:
+                model.addConstr(
+                    gp.quicksum(x[a] for a in outgoing_arcs) <= 1, name=f"VI5_out_{k}_{v}")
+
+    # Incoming-arc conflicts: sum_i x[k, i, v] ≤ 1
+    for k in vehicles:
+        for v in trip_ids:
+            incoming_arcs = [(k, i, v) for (_k, i, j) in arcs.keys() if _k == k and j == v]
+            if incoming_arcs:
+                model.addConstr(
+                    gp.quicksum(x[a] for a in incoming_arcs) <= 1, name=f"VI5_in_{k}_{v}")
+
+    # model.setParam('MIPGap', 0.01)
+    # model.setParam("Presolve", 0)
+            
+    model.optimize()
+    
+    # --- Reporting Logic (Updated to include Energy Variables) ---
+    report_lines, schedules = [], {}
+    variable_report_str = ""
+    solution_data = {}
+    default_time_var = type('obj', (object,), {'X': 0.0}) # Helper for safe .X access
+    
+    if model.status == GRB.OPTIMAL:
+
+        # New dictionary to collect variable results for JSON export
+        solution_vars_json = {}
+        TOL = 1e-4 # Tolerance for non-negative values
+        
+        # --- Helper function to extract and save variable values ---
+        def extract_vars(gurobi_vars, var_name):
+            data = {}
+            for key, var in gurobi_vars.items():
+                if var.X > TOL:
+                    # Convert the tuple key (k, i, j) to a readable string key
+                    str_key = str(key).replace("'", "").replace(" ", "")
+                    data[str_key] = round(var.X, 4)
+            solution_vars_json[var_name] = data
+
+        # Extract all main variable types
+        extract_vars(x, "x")
+        extract_vars(T, "T")
+        extract_vars(w, "w")
+        extract_vars(E_pre, "E_pre")
+        extract_vars(E_bar, "E_bar")
+        extract_vars(G, "G")
+        
+        # Assuming CT and Y are now defined for charging
+        try:
+            extract_vars(CT, "CT")
+            extract_vars(Y, "Y")
+        except NameError:
+            # Handle case where CT or Y might not be defined/used
+            pass
+
+        solution_data["solution_vars"] = solution_vars_json
+
+        report_lines.append(f"Optimal solution found with total cost: {model.ObjVal:.2f}")
+        used_vehicles = {k for k, i, j in x.keys() if x[k, i, j].X > 0.5}
+        report_lines.append(f"Total vehicles used: {len(used_vehicles)} out of {len(vehicles)}")
+        
+        # Schedule reconstruction
+        for k in sorted(list(used_vehicles)):
+            current_node = origin_nodes[k]
+            route = [origin_nodes[k]]
+            
+            start_time = T.get((k, origin_nodes[k]), default_time_var).X
+            start_ebar = E_bar.get((k, origin_nodes[k]), default_time_var).X
+            route_str = [f"{origin_nodes[k]} (Time: {start_time:.2f}, E_bar: {start_ebar:.1f})"]
+            
+            while current_node not in dest_nodes.values():
+                found_next = False
+                vehicle_arcs = [(i, j) for _k, i, j in arcs.keys() if _k == k]
+                for i_node, j_node in vehicle_arcs:
+                    if i_node == current_node and x.get((k, i_node, j_node)) and x[k, i_node, j_node].X > 0.5:
+                        route.append(j_node)
+                        time_val = T.get((k, j_node), default_time_var).X
+                        
+                        # --- NEW: Get energy levels at the next node ---
+                        epre_val = E_pre.get((k, j_node), default_time_var).X
+                        gbar_val = E_bar.get((k, j_node), default_time_var).X
+                        g_val = G.get((k, j_node), default_time_var).X
+                        
+                        energy_info = f" (E_pre: {epre_val:.1f}, G: {g_val:.1f}, E_bar: {gbar_val:.1f})"
+                        
+                        route_str.append(f"{j_node} (Time: {time_val:.2f}{energy_info})")
+                        current_node = j_node; found_next = True; break
+                if not found_next: break
+            schedules[k] = route
+            report_lines.append(f" - Vehicle {k} schedule: {' -> '.join(route_str)}")
+            
+        var_report_lines = []
+        
+        # 1. Report 'x' variables (Active Arcs)
+        var_report_lines.append("\n--- Active Arc Variables (x[k,i,j] = 1) ---")
+        sorted_x_keys = sorted([key for key in x.keys() if x[key].X > 0.5]) 
+        for (k, i, j) in sorted_x_keys:
+            var_report_lines.append(f"  x[{k}, {i}, {j}] = {x[k,i,j].X:.0f} (Cost: {base_costs[k,i,j]}, Cons: {energy_consumption.get((k,i,j), 0):.1f})")
+
+        # 2. Report 'T' variables (Node Times)
+        var_report_lines.append("\n--- Node Start Times (T[k,i] > 0) ---")
+        solution_nodes = set((k, i) for (k, i, j) in sorted_x_keys) | set((k, j) for (k, i, j) in sorted_x_keys)
+        sorted_T_keys = sorted([key for key in T.keys() if key in solution_nodes and T.get(key) is not None and T[key].X > 0.0001])
+        for (k, i) in sorted_T_keys:
+            var_report_lines.append(f"  T[{k}, {i}] = {T[k,i].X:.2f}")
+
+        # 3. Report 'w' variables (Waiting Costs)
+        var_report_lines.append("\n--- Incurred Waiting Costs (w[k,i,j] > 0) ---")
+        sorted_w_keys = sorted([key for key in w.keys() if w[key].X > 0.0001])
+        for (k, i, j) in sorted_w_keys:
+            var_report_lines.append(f"  w[{k}, {i}, {j}] = {w[k,i,j].X:.2f}")
+
+        # 4. Report Energy Variables (E_pre, G, E_bar)
+        var_report_lines.append("\n--- Energy Levels (E_pre, G, E_bar) ---")
+        
+        sorted_E_keys = sorted([key for key in E_pre.keys() if key in solution_nodes])
+        for (k, i) in sorted_E_keys:
+            e_pre_val = E_pre.get((k, i), default_time_var).X
+            g_val = G.get((k, i), default_time_var).X
+            e_bar_val = E_bar.get((k, i), default_time_var).X
+            # Only report if E_bar is relevant (part of the path)
+            if e_bar_val > 0.0001: 
+                 var_report_lines.append(f"  {k}, {i}: E_pre={e_pre_val:.1f} | G={g_val:.1f} | E_bar={e_bar_val:.1f} (Min/Max: {PHI_MIN}/{PHI_MAX})")
+
+        # 5. Report Charging Completion Time (CT)
+        var_report_lines.append("\n--- Charging Completion Times (CT[k, j] > 0) ---")
+        # Filter for charging station nodes that are part of the solution
+        solution_cs_nodes = set((k, i) for (k, i) in sorted_E_keys if i in charging_station_set)
+
+        sorted_CT_keys = sorted([key for key in CT.keys() if key in solution_cs_nodes and CT.get(key) is not None and CT[key].X > 0.0001])
+        for (k, j) in sorted_CT_keys:
+            var_report_lines.append(f"  CT[{k}, {j}] = {CT[k, j].X:.2f}")
+
+        # 6. Report Charging Order Variables (Y)
+        var_report_lines.append("\n--- Charging Order Variables (Y[j, k1, k2] = 1) ---")
+        sorted_Y_keys = sorted([key for key in Y.keys() if Y[key].X > 0.5])
+        for (j, k1, k2) in sorted_Y_keys:
+            # Y[j, k1, k2] = 1 means k1 arrives before k2 at station j
+            var_report_lines.append(f"  Y[{j}, {k1}, {k2}] = {Y[j, k1, k2].X:.0f}")
+        
+        variable_report_str = "\n".join(var_report_lines)
+
+        if solution_data:
+            json_output_path = os.path.join(output_dir, "solution_variables.json")
+            with open(json_output_path, "w") as f:
+                json.dump(solution_data["solution_vars"], f, indent=4)
+            print(f"Solution variables saved to '{json_output_path}'")
+            
+    else:
+        report_lines.append("No optimal solution was found or the model was infeasible.")
+    
+    return "\n".join(report_lines), schedules, variable_report_str
+
+# --- Reporting Function (Non-Plotting) ---
+
+def get_instance_report(instance: ProblemInstance) -> str:
+    """
+    Generates a formatted string report for the instance.
+    (Unchanged)
+    """
+    report_lines = []
+    report_lines.append("--- Instance Generation Summary ---")
+    total_vehicles = sum(depot.vehicle_count for depot in instance.depots)
+    report_lines.append(f"  - Trips to cover: {len(instance.trips)}")
+    report_lines.append(f"  - Depots: {len(instance.depots)}")
+    report_lines.append(f"  - Total vehicles available: {total_vehicles}")
+    report_lines.append("\n--- Depot and Vehicle Information ---")
+    for depot in instance.depots:
+        report_lines.append(f"Depot ID: {depot.id} | Location: ({depot.location.x:5.2f}, {depot.location.y:5.2f}) | Vehicles: {depot.vehicle_count}")
+    report_lines.append("\n--- Detailed Trip Information ---")
+    point_to_id_map = {point: i + 1 for i, point in enumerate(instance.relief_points)}
+    for trip in instance.trips:
+        start_rp_id = point_to_id_map.get(trip.start_point, "N/A")
+        end_rp_id = point_to_id_map.get(trip.end_point, "N/A")
+        # Add eta reporting
+        eta_info = f" | ETA: {trip.eta:.2f}" if hasattr(trip, 'eta') and trip.eta is not None else ""
+        report_lines.append(
+            f"Trip ID: {trip.id: <3} | "
+            f"Type: {trip.trip_type: <5} | "
+            f"Starts at RP #{start_rp_id: <3} -> Ends at RP #{end_rp_id: <3} | "
+            f"Time: {trip.start_time:7.2f} to {trip.end_time:7.2f}{eta_info}"
+        )
+    return "\n".join(report_lines)
+
+# --- Main Execution Block (ADAPTED) ---
+
+if __name__ == "__main__":
+    """
+    This block runs only when the script is executed directly.
+    """
+
+    random.seed(43)
+
+    start_time = time.perf_counter()
+    
+    # 1. Generate instance
+    print("--- Part 1: Generating a Gkiotsalitis (EB-VSP-TW) instance ---")
+    # ***ADAPTATION 3: Use the GkiotsalitisInstanceGenerator and provide n_charging_stations***
+    generator = GkiotsalitisInstanceGenerator(n_trips=12, n_depots=1, n_relief_points=4, n_charging_stations=2, problem_class='A')
+    instance = generator.generate()
+    print("Instance generation complete.")
+
+    # 2. Set up output directory
+    print("--- Part 2: Preparing Output Directory ---")
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    output_dir = os.path.join(project_root, "..", "output", f"EB_TW_run_{timestamp}")
+    os.makedirs(output_dir, exist_ok=True)
+    bus_blocks_dir = os.path.join(output_dir, "bus_blocks")
+    os.makedirs(bus_blocks_dir, exist_ok=True)
+    
+    # 3. Save instance report and plots
+    print(f"--- Part 3: Saving instance details and plots to '{output_dir}' ---")
+    instance_report = get_instance_report(instance)
+    
+    plotting_utils_eb.save_instance_plot(instance, os.path.join(output_dir, "instance_plot.png"))
+    trip_y = plotting_utils_eb.save_dag_plot(instance, os.path.join(output_dir, "instance_dag.png"))
+    
+    # 4. Solve instance
+    print("--- Part 4: Solving the Instance ---")
+    solution_report, schedules, variable_report_str = solve_md_vsp_tw_from_instance(instance)
+    
+    # 5. Save solution plots if a solution was found
+    print(schedules)
+    if schedules:
+        plotting_utils_eb.save_solution_dag_plot(instance, schedules, os.path.join(output_dir, "solved_instance_dag.png"), trip_y=trip_y)
+        plotting_utils_eb.save_solution_plot(instance, schedules, bus_blocks_dir)
+    
+    # 6. Write combined report to file
+    print("--- Part 5: Writing Full Report to File ---")
+    full_report_path = os.path.join(output_dir, "instance_and_solution_report.txt")
+    with open(full_report_path, "w", encoding='utf-8') as f:
+        f.write("--- INSTANCE INFORMATION ---\n")
+        f.write(instance_report)
+        f.write("\n\n--- SOLUTION ---\n")
+        f.write(solution_report)
+
+        # --- CHANGE 2: Append the variable report to the file ---
+        if variable_report_str: # Only write if the string is not empty
+            f.write("\n\n--- SOLUTION VARIABLES ---")
+            f.write(variable_report_str)
+
+    end_time = time.perf_counter()
+    elapsed_sec = end_time - start_time
+
+    print(f"\nProcess complete. All results saved in '{output_dir}'")
+
+    print(f"\nTotal execution time: {elapsed_sec:.2f} seconds ({elapsed_sec/60:.2f} minutes)")

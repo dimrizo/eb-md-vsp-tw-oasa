@@ -179,3 +179,19 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+
+# Ignore all TeX files everywhere
+*.tex
+
+*.lp
+
+# Ignore everything inside input and output
+input/*
+output/*
+
+# But keep the folders' placeholder files
+!input/.gitkeep
+!output/.gitkeep
+
+# Ignore paper completely
+paper/
