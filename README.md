@@ -5,8 +5,23 @@
 This repository accompanies a study on the Electric Bus Multi-Depot Vehicle Scheduling Problem with Time Windows (EB-MD-VSP-TW) with continuous-time charging operations. It contains the optimization and heuristic tools used to generate and evaluate electric bus schedules under depot, charging, time-window, battery, and energy constraints. The codebase supports experiments on both synthetic instances and real-world bus lines from Athens, Greece, providing a reproducible foundation for analysis, validation, and further research.
 
 This model is presented in the article (LINK TO BE ADDED HERE) and is an extension of work presented in the article by Gkiotsalitis et al., available at the link : [(Discrete-time EB-MD-VSP-TW model)](https://www.sciencedirect.com/science/article/pii/S0377221722005707).
+
+## Acknowledgements
+
+The present work is partially funded by the metaCCAZE Project (Flexibly adapted MetaInnovations, use cases, collaborative business and governance models to accelerate deployment of smart and shared Zero Emission mobility for passengers and freight). This project has received funding from the European Union’s Horizon Europe research and innovation programme under grant agreement No. 101139678.
+
+<br>
+
+<img src="https://www.metaccaze-project.eu/wp-content/uploads/2024/02/metaCCAZE-Logo.svg" width="664" height="150">
+
+<br><br>
+
+This work has been suppored by the Railways and Transport Laboratory at the National Technical Univerity of Athens (NTUA).
+Find more information at the link: https://railwaysandtransportlab.civil.ntua.gr/
+
+<br>
   
-## Installation
+## Requirements
 
 Before installing the project, ensure you have Python installed on your system (Python 3.6 or newer is recommended). Additionally, you will need Gurobi Optimizer, which requires a license. You can obtain a free academic license or evaluate a commercial license from [Gurobi's website](https://www.gurobi.com).
 
@@ -20,7 +35,7 @@ Before installing the project, ensure you have Python installed on your system (
 
 ## Installation
 
-To use the code you can just run it as a Python script given that all dependencies are installed. Make sure that you comment in/out all necessary/unnecessary code given the model Use Case example that you want to run (as indicated in the article and Python code).
+To use the code you can just run it as a Python script given that all dependencies are installed. You can usually do this with conda. Make sure that you comment in/out all necessary/unnecessary code given the model Use Case example that you want to run (as indicated in the article and Python code).
 
 ## Contributing
 
@@ -40,19 +55,4 @@ This repository is licensed under the Apache License 2.0 - see the LICENSE file 
 ## Contact
 
 For any queries or further information, please reach out to any of the authors of the article using the contact details provided there.
-
-## Acknowledgements
-
-The present work is partially funded by the metaCCAZE Project (Flexibly adapted MetaInnovations, use cases, collaborative business and governance models to accelerate deployment of smart and shared Zero Emission mobility for passengers and freight). This project has received funding from the European Union’s Horizon Europe research and innovation programme under grant agreement No. 101139678.
-
-<br>
-
-<img src="https://www.metaccaze-project.eu/wp-content/uploads/2024/02/metaCCAZE-Logo.svg" width="664" height="150">
-
-<br><br>
-
-This work has been suppored by the Railways and Transport Laboratory at the National Technical Univerity of Athens (NTUA).
-Find more information at the link: https://railwaysandtransportlab.civil.ntua.gr/
-
-<br>
 
