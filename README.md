@@ -17,11 +17,9 @@ The present work is partially funded by the metaCCAZE Project (Flexibly adapted 
 <br>
 
 This work has been suppored by the Railways and Transport Laboratory at the National Technical Univerity of Athens (NTUA).
-Find more information at the link: https://railwaysandtransportlab.civil.ntua.gr/
+Find more information at the link: http://railwaysandtransportlab.civil.ntua.gr/
 
-<br>
-
-## Synthetic data
+## Input data
 
 In this repository we already include the synthetic test instances from the sections 4.1 (synthetic data generator) and 4.2 (in the input folder) of the paper.
 
@@ -29,7 +27,7 @@ For the real bus network data you may download the data from: [(OASA GTFS Open R
 
 You may contact us on GitHub or other platforms to guide you through the data acquisition process.
 
-## Requirements
+## Software Requirements
 
 Before installing the project, ensure you have Python installed on your system (Python 3.6 or newer is recommended). Additionally, you will need Gurobi Optimizer, which requires a license. You can obtain a free academic license or evaluate a commercial license from [Gurobi's website](https://www.gurobi.com).
 
