@@ -2,8 +2,9 @@
 
 ## Description
 
-This is a mixed integer linear problem (MILP) model for the charging stations' location problem (CSLP) when considering a public transport network operated by electric buses, as well as the charging scheduling and the energy pricing (time of use tariffs and peak demand charge). This model is presented in the article (LINK TO BE ADDED HERE) and is an extension of work presented in the article by Gkiotsalitis et al., available at the link : (LINK TO BE ADDED HERE).
+This repository accompanies a study on the Electric Bus Multi-Depot Vehicle Scheduling Problem with Time Windows (EB-MD-VSP-TW) with continuous-time charging operations. It contains the optimization and heuristic tools used to generate and evaluate electric bus schedules under depot, charging, time-window, battery, and energy constraints. The codebase supports experiments on both synthetic instances and real-world bus lines from Athens, Greece, providing a reproducible foundation for analysis, validation, and further research.
 
+This model is presented in the article (LINK TO BE ADDED HERE) and is an extension of work presented in the article by Gkiotsalitis et al., available at the link : [(Discrete-time EB-MD-VSP-TW model)](https://www.sciencedirect.com/science/article/pii/S0377221722005707).
   
 ## Installation
 
@@ -52,10 +53,6 @@ The present work is partially funded by the metaCCAZE Project (Flexibly adapted 
 
 This work has been suppored by the Railways and Transport Laboratory at the National Technical Univerity of Athens (NTUA).
 Find more information at the link: https://railwaysandtransportlab.civil.ntua.gr/
-
-<br>
-
-<img src="https://railwaysandtransportlab.civil.ntua.gr/wp-content/uploads/2023/04/RTLab_logo-1-1024x372.png" width="470" height="170">
 
 <br>
 
