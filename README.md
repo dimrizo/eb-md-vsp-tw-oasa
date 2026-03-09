@@ -41,7 +41,7 @@ Before installing the project, ensure you have Python installed on your system (
 
 ## Installation
 
-To use the code you can just run it as a Python script given that all dependencies are installed. You can usually do this with conda. Make sure that you comment in/out all necessary/unnecessary code given the model Use Case example that you want to run (as indicated in the article and Python code).
+To use the code you can just run it as a Python script given that all Software Requirements are covered. Also you will need to install all Python libraries. These libraries (dependencies) are included in the requirements.txt file. 
 
 ## Contributing
 
