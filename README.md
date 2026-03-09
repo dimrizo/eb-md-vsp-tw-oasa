@@ -14,13 +14,21 @@ The present work is partially funded by the metaCCAZE Project (Flexibly adapted 
 
 <img src="https://www.metaccaze-project.eu/wp-content/uploads/2024/02/metaCCAZE-Logo.svg" width="664" height="150">
 
-<br><br>
+<br>
 
 This work has been suppored by the Railways and Transport Laboratory at the National Technical Univerity of Athens (NTUA).
 Find more information at the link: https://railwaysandtransportlab.civil.ntua.gr/
 
 <br>
-  
+
+## Synthetic data
+
+In this repository we already include the synthetic test instances from the sections 4.1 (synthetic data generator) and 4.2 (in the input folder) of the paper.
+
+For the real bus network data you may download the data from: [(OASA GTFS Open Repository)](https://catalog.growthfund.gr/en/dataset/dromologia-osy).
+
+You may contact us on GitHub or other platforms to guide you through the data acquisition process.
+
 ## Requirements
 
 Before installing the project, ensure you have Python installed on your system (Python 3.6 or newer is recommended). Additionally, you will need Gurobi Optimizer, which requires a license. You can obtain a free academic license or evaluate a commercial license from [Gurobi's website](https://www.gurobi.com).
