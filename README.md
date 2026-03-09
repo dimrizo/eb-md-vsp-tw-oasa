@@ -1,4 +1,4 @@
-# e-EB-CSLP
+# Exact Continuous-time EB-MD-VSP-TW model and Clustering Heuristic approach
 
 ## Description
 
