@@ -1,10 +1,11 @@
-# Railways and Transport Laboratory, National Technical University of Athens
-# Bi-level model for the Charging Stations Location Problem for Electric Buses (bi-EB-CSLP)
+# National Technical University of Athens
+# Railways & Transport Lab
+# Dimitrios Rizopoulos, Konstantinos Gkiotsalitis
+
 # Haversine distance calculation module
-
 # Module description: Returns direct distance in meters between two points
-import math
 
+import math
 
 def main(lat_1, lon_1, lat_2, lon_2):
     """
