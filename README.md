@@ -4,7 +4,7 @@
 
 This repository accompanies a study on the Electric Bus Multi-Depot Vehicle Scheduling Problem with Time Windows (EB-MD-VSP-TW) with continuous-time charging operations. It contains the optimization and heuristic tools used to generate and evaluate electric bus schedules under depot, charging, time-window, battery, and energy constraints. The codebase supports experiments on both synthetic instances and real-world bus lines from Athens, Greece, providing a reproducible foundation for analysis, validation, and further research.
 
-This model is presented in the article (LINK TO BE ADDED HERE).
+This model is presented in the article (LINK TO BE ADDED HERE) by Dimitrios Rizopoulos and Konstantinos Gkiotsalitis.
 
 ## Acknowledgements
 
