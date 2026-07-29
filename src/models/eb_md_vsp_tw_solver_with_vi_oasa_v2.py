@@ -1,16 +1,16 @@
 # National Technical University of Athens
 # Railways & Transport Lab
+# Dimitrios Rizopoulos, Konstantinos Gkiotsalitis
 
 import os
 import sys
 import datetime
 import random
 import json
-import re
+import time
 
 import gurobipy as gp
 from gurobipy import GRB
-import pandas as pd
 
 # --- Add parent directory to system path ---
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -24,7 +24,7 @@ from data_processing.read_file import read_comma_delimited_file
 import plotting.plotting_utils_eb as plotting_utils_eb
 
 # --- Constants for the Energy Buffer (EB) Model Extension ---
-SMALL_M = 0.00001
+SMALL_M = 0.01
 BIG_M = 1000000
 
 # --- Domain-specific constants (GTFS-based instance) ---
@@ -36,516 +36,15 @@ PHI_MAX = 350.0                         # Max SOC / Energy level
 PHI_MIN = 100.0                         # Min SOC / Energy level
 CHARGING_RATE_KWH_PER_MINUTE = 3.0
 THETA_FACTOR = 0.002 # 0.00072          # Energy per meter
-TRAVEL_COST = 3.0                      # Cost per minute of travel
+TRAVEL_COST = 3.0                       # Cost per minute of travel
 TIME_WINDOW_SLACK = 10
-
-# ============================================================
-# Standalone / imported solve controls
-# ============================================================
-
-GUROBI_TIME_LIMIT_SEC = 18000
-
-# If True, a time-limited Gurobi run with a feasible incumbent is accepted.
-ACCEPT_TIME_LIMIT_INCUMBENTS = True
 
 # ============================================================
 # Instance Loader from GTFS
 # ============================================================
 
-def start_time_from_gtfs_trip_id(gtfs_trip_id: str) -> float:
-    """
-    Extract start time in minutes from GTFS trip_id ending in _HHMM.
-    Example: 1033_day_1_1891_0630 -> 390
-    """
-    hhmm = gtfs_trip_id.strip().split("_")[-1]
-    if len(hhmm) != 4 or not hhmm.isdigit():
-        raise ValueError(f"Cannot parse start time from trip_id '{gtfs_trip_id}'")
-    h = int(hhmm[:2])
-    m = int(hhmm[2:])
-    return h * 60 + m
-
-def _gtfs_time_to_minutes(value) -> float:
-    """Convert a GTFS HH:MM:SS value, including hours above 24, to minutes."""
-    if pd.isna(value):
-        raise ValueError("Missing GTFS time value")
-
-    text = str(value).strip()
-    if not text:
-        raise ValueError("Empty GTFS time value")
-
-    parts = text.split(":")
-    if len(parts) != 3:
-        raise ValueError(f"Invalid GTFS time value: {text!r}")
-
-    hours, minutes, seconds = (int(part) for part in parts)
-    return hours * 60.0 + minutes + seconds / 60.0
-
-
-def _normalise_route_id(value):
-    """Match a GTFS route_id to the key type used by process_gtfs_data()."""
-    text = str(value).strip()
-
-    try:
-        numeric = int(float(text))
-    except (TypeError, ValueError):
-        numeric = None
-
-    return text, numeric
-
-
-def _exact_trip_sort_value(value):
-    """Return the numeric part of T123; unknown labels sort last."""
-    match = re.fullmatch(r"T(\d+)", str(value).strip())
-    return int(match.group(1)) if match else 10**12
-
-
-def load_instance_from_gtfs_cluster(
-    cluster_trips_txt_path: str,
-    day: str,
-    gtfs_folder_path: str,
-    depot_filepath: str,
-    buses_per_depot: list[int],
-    buses_availability_times: list[float],
-    buses_SoC: list[float],
-    number_of_CS_per_depot: int = 1,
-    number_of_removed_stops: int = 0,
-    buses_state: list[bool] = None
-) -> ProblemInstance:
-    """
-    Build one cluster instance while preserving each GTFS trip's own geometry.
-
-    Service-trip consumption is calculated exactly as in the full exact loader:
-
-        eta = THETA_FACTOR * sum(
-            haversine(stop_s, stop_{s+1})
-            for consecutive stops in the trip
-        )
-
-    The previous implementation paired GTFS trip IDs with first/last coordinates
-    using zip() and then used only endpoint distance. That both underestimated
-    energy and allowed a trip to inherit another departure's geometry.
-
-    For exact comparability, the rolling-horizon orchestrator should call this
-    function with number_of_removed_stops=0, matching the full exact experiment.
-    """
-    if number_of_removed_stops != 0:
-        raise ValueError(
-            "The cluster loader currently requires number_of_removed_stops=0 "
-            "to remain exactly comparable with the supplied full exact model."
-        )
-
-    cluster_df = pd.read_csv(
-        cluster_trips_txt_path,
-        dtype={
-            "trip_id": str,
-            "route_id": str,
-            "direction_id": str,
-            "exact_trip_id": str,
-        },
-    )
-
-    if "trip_id" not in cluster_df.columns:
-        raise ValueError("Cluster trips.txt must contain a 'trip_id' column")
-
-    cluster_df["trip_id"] = cluster_df["trip_id"].astype(str).str.strip()
-    cluster_df = cluster_df[cluster_df["trip_id"] != ""].copy()
-
-    if cluster_df.empty:
-        raise ValueError("Cluster trips.txt is empty")
-
-    duplicate_cluster_ids = cluster_df.loc[
-        cluster_df["trip_id"].duplicated(keep=False),
-        "trip_id",
-    ].tolist()
-    if duplicate_cluster_ids:
-        raise ValueError(
-            "Cluster trips.txt contains duplicate trip IDs: "
-            f"{sorted(set(duplicate_cluster_ids))}"
-        )
-
-    # Preserve global exact-model order when v6 cluster files provide it.
-    if "exact_trip_id" in cluster_df.columns:
-        cluster_df["_exact_order"] = (
-            cluster_df["exact_trip_id"]
-            .map(_exact_trip_sort_value)
-        )
-        cluster_df = (
-            cluster_df
-            .sort_values(["_exact_order", "trip_id"], kind="stable")
-            .drop(columns=["_exact_order"])
-            .reset_index(drop=True)
-        )
-    else:
-        cluster_df = cluster_df.reset_index(drop=True)
-
-    # ---------- Load authoritative GTFS records ----------
-    gtfs_trips_path = os.path.join(gtfs_folder_path, "trips.txt")
-    stop_times_path = os.path.join(gtfs_folder_path, "stop_times.txt")
-    stops_path = os.path.join(gtfs_folder_path, "stops.txt")
-
-    for required_path in (gtfs_trips_path, stop_times_path, stops_path):
-        if not os.path.isfile(required_path):
-            raise FileNotFoundError(required_path)
-
-    gtfs_trips_df = pd.read_csv(
-        gtfs_trips_path,
-        dtype={
-            "trip_id": str,
-            "route_id": str,
-            "direction_id": str,
-        },
-    )
-    required_trip_columns = {"trip_id", "route_id", "direction_id"}
-    missing_trip_columns = required_trip_columns - set(gtfs_trips_df.columns)
-    if missing_trip_columns:
-        raise ValueError(
-            f"GTFS trips.txt missing columns: {sorted(missing_trip_columns)}"
-        )
-
-    gtfs_trips_df["trip_id"] = gtfs_trips_df["trip_id"].astype(str).str.strip()
-    gtfs_trips_df = gtfs_trips_df.set_index("trip_id", drop=False)
-
-    stop_times_df = pd.read_csv(
-        stop_times_path,
-        dtype={"trip_id": str, "stop_id": str},
-    )
-    required_stop_time_columns = {
-        "trip_id",
-        "stop_id",
-        "stop_sequence",
-        "arrival_time",
-        "departure_time",
-    }
-    missing_stop_time_columns = (
-        required_stop_time_columns - set(stop_times_df.columns)
-    )
-    if missing_stop_time_columns:
-        raise ValueError(
-            "GTFS stop_times.txt missing columns: "
-            f"{sorted(missing_stop_time_columns)}"
-        )
-
-    stop_times_df["trip_id"] = stop_times_df["trip_id"].astype(str).str.strip()
-    stop_times_df["stop_id"] = stop_times_df["stop_id"].astype(str).str.strip()
-    stop_times_df["stop_sequence"] = pd.to_numeric(
-        stop_times_df["stop_sequence"],
-        errors="coerce",
-    )
-    stop_times_df = stop_times_df.dropna(subset=["stop_sequence"])
-
-    selected_trip_ids = cluster_df["trip_id"].tolist()
-    selected_stop_times = stop_times_df[
-        stop_times_df["trip_id"].isin(selected_trip_ids)
-    ].copy()
-
-    stops_df = pd.read_csv(stops_path, dtype={"stop_id": str})
-    required_stop_columns = {"stop_id", "stop_lat", "stop_lon"}
-    missing_stop_columns = required_stop_columns - set(stops_df.columns)
-    if missing_stop_columns:
-        raise ValueError(
-            f"GTFS stops.txt missing columns: {sorted(missing_stop_columns)}"
-        )
-
-    stops_df["stop_id"] = stops_df["stop_id"].astype(str).str.strip()
-    stops_df["stop_lat"] = pd.to_numeric(
-        stops_df["stop_lat"],
-        errors="coerce",
-    )
-    stops_df["stop_lon"] = pd.to_numeric(
-        stops_df["stop_lon"],
-        errors="coerce",
-    )
-    stops_df = stops_df.dropna(
-        subset=["stop_id", "stop_lat", "stop_lon"]
-    )
-    stop_coordinates = {
-        row.stop_id: (float(row.stop_lat), float(row.stop_lon))
-        for row in stops_df.itertuples(index=False)
-    }
-
-    # The exact model still supplies average service duration by route-direction.
-    route_info = extract_gtfs_trips_data.process_gtfs_data(
-        day=day,
-        gtfs_folder_path=gtfs_folder_path,
-        number_of_removed_stops=number_of_removed_stops,
-    )
-
-    trips = []
-    relief_points = []
-    trip_counter = 1
-    energy_audit = {}
-
-    for cluster_row in cluster_df.itertuples(index=False):
-        gtfs_trip_id = str(cluster_row.trip_id).strip()
-
-        if gtfs_trip_id not in gtfs_trips_df.index:
-            raise ValueError(
-                f"Trip {gtfs_trip_id} is absent from GTFS trips.txt"
-            )
-
-        gtfs_row = gtfs_trips_df.loc[gtfs_trip_id]
-        if isinstance(gtfs_row, pd.DataFrame):
-            raise ValueError(
-                f"GTFS trips.txt contains duplicate trip_id={gtfs_trip_id}"
-            )
-
-        route_text, route_numeric = _normalise_route_id(
-            gtfs_row["route_id"]
-        )
-
-        if route_numeric is not None and route_numeric in route_info:
-            route_key = route_numeric
-        elif route_text in route_info:
-            route_key = route_text
-        else:
-            raise ValueError(
-                f"Route {route_text} for trip {gtfs_trip_id} "
-                "is absent from process_gtfs_data() output"
-            )
-
-        try:
-            direction_id = int(float(gtfs_row["direction_id"]))
-        except (TypeError, ValueError):
-            raise ValueError(
-                f"Invalid direction_id for trip {gtfs_trip_id}: "
-                f"{gtfs_row['direction_id']!r}"
-            )
-
-        if direction_id not in (0, 1):
-            raise ValueError(
-                f"Trip {gtfs_trip_id} has unsupported direction_id="
-                f"{direction_id}; expected 0 or 1"
-            )
-
-        route_data = route_info[route_key]
-        avg_travel_time = float(
-            route_data[2] if direction_id == 0 else route_data[3]
-        )
-
-        trip_stop_rows = (
-            selected_stop_times[
-                selected_stop_times["trip_id"] == gtfs_trip_id
-            ]
-            .sort_values("stop_sequence", kind="stable")
-        )
-
-        if len(trip_stop_rows) < 2:
-            raise ValueError(
-                f"Trip {gtfs_trip_id} has fewer than two valid stop-time rows"
-            )
-
-        stop_sequence_coords = []
-        for stop_id in trip_stop_rows["stop_id"].tolist():
-            if stop_id not in stop_coordinates:
-                raise ValueError(
-                    f"Trip {gtfs_trip_id} references stop_id={stop_id}, "
-                    "which is missing coordinates in stops.txt"
-                )
-            stop_sequence_coords.append(stop_coordinates[stop_id])
-
-        first_stop_row = trip_stop_rows.iloc[0]
-        departure_value = first_stop_row["departure_time"]
-        if pd.isna(departure_value) or not str(departure_value).strip():
-            departure_value = first_stop_row["arrival_time"]
-
-        start_time = _gtfs_time_to_minutes(departure_value)
-
-        start_lat, start_lon = stop_sequence_coords[0]
-        end_lat, end_lon = stop_sequence_coords[-1]
-
-        total_distance_m = 0.0
-        for (
-            (previous_lat, previous_lon),
-            (next_lat, next_lon),
-        ) in zip(
-            stop_sequence_coords[:-1],
-            stop_sequence_coords[1:],
-        ):
-            total_distance_m += haversine.main(
-                previous_lat,
-                previous_lon,
-                next_lat,
-                next_lon,
-            )
-
-        eta_value = total_distance_m * THETA_FACTOR
-
-        start_point = Point(start_lon, start_lat)
-        end_point = Point(end_lon, end_lat)
-
-        trip = Trip(
-            id=trip_counter,
-            start_point=start_point,
-            end_point=end_point,
-            start_time=float(start_time),
-            end_time=float(start_time + avg_travel_time),
-            trip_type="REGULAR",
-        )
-
-        trip.trip_length = avg_travel_time
-        trip.start_time_window = (
-            float(start_time) - TIME_WINDOW_SLACK,
-            float(start_time) + TIME_WINDOW_SLACK,
-        )
-        trip.eta = float(eta_value)
-        trip.gtfs_trip_id = gtfs_trip_id
-        trip.route_id = route_key
-        trip.direction_id = direction_id
-
-        if hasattr(cluster_row, "exact_trip_id"):
-            exact_trip_id = str(cluster_row.exact_trip_id).strip()
-            if exact_trip_id and exact_trip_id.lower() != "nan":
-                trip.exact_trip_id = exact_trip_id
-
-        trips.append(trip)
-        relief_points.extend([start_point, end_point])
-
-        energy_audit[gtfs_trip_id] = {
-            "local_trip_id": f"T{trip_counter}",
-            "exact_trip_id": getattr(trip, "exact_trip_id", None),
-            "route_id": str(route_key),
-            "direction_id": direction_id,
-            "start_time": float(start_time),
-            "number_of_stops": len(stop_sequence_coords),
-            "service_distance_m": float(total_distance_m),
-            "eta_kwh": float(eta_value),
-        }
-
-        print(
-            f"Loaded local T{trip_counter}"
-            f" ({getattr(trip, 'exact_trip_id', 'no exact ID')})"
-            f" | GTFS={gtfs_trip_id}"
-            f" | route={route_key}"
-            f" | direction={direction_id}"
-            f" | stops={len(stop_sequence_coords)}"
-            f" | distance={total_distance_m:.2f} m"
-            f" | eta/G={eta_value:.4f} kWh"
-        )
-
-        trip_counter += 1
-
-    if not trips:
-        raise ValueError("No GTFS trips matched the selected cluster")
-
-    # ---------- Depot and fleet configuration ----------
-    depot_df = read_comma_delimited_file(depot_filepath)
-    if depot_df is None or depot_df.empty:
-        raise ValueError("Depot file could not be read or is empty")
-
-    if (
-        buses_per_depot is None
-        or buses_availability_times is None
-        or buses_SoC is None
-    ):
-        raise ValueError(
-            "Fleet configuration inputs must be provided explicitly"
-        )
-
-    number_of_depots = len(buses_per_depot)
-
-    if len(depot_df) != number_of_depots:
-        raise ValueError(
-            f"Depot count mismatch: depots.txt has {len(depot_df)} rows, "
-            f"but buses_per_depot has length {number_of_depots}"
-        )
-
-    total_buses = sum(buses_per_depot)
-
-    if len(buses_availability_times) != total_buses:
-        raise ValueError(
-            "Length of buses_availability_times must equal total buses"
-        )
-
-    if len(buses_SoC) != total_buses:
-        raise ValueError(
-            "Length of buses_SoC must equal total buses"
-        )
-
-    if buses_state is None:
-        buses_state = [True] * total_buses
-
-    if len(buses_state) != total_buses:
-        raise ValueError(
-            "Length of buses_state must equal total buses"
-        )
-
-    required_depot_columns = {"lon", "lat"}
-    if not required_depot_columns.issubset(depot_df.columns):
-        raise ValueError(
-            f"Depot file must contain columns: {required_depot_columns}"
-        )
-
-    depot_points = [
-        Point(row["lon"], row["lat"])
-        for _, row in depot_df.iterrows()
-    ]
-
-    depots = []
-    charging_stations = []
-    charger_id = 1
-
-    for depot_id, (point, bus_count) in enumerate(
-        zip(depot_points, buses_per_depot),
-        start=1,
-    ):
-        depots.append(
-            Depot(
-                id=depot_id,
-                location=point,
-                vehicle_count=bus_count,
-            )
-        )
-
-        for _ in range(number_of_CS_per_depot):
-            charging_stations.append(
-                ChargingStation(
-                    id=charger_id,
-                    location=point,
-                    time_window=(0.0, BIG_M),
-                )
-            )
-            charger_id += 1
-
-    instance = ProblemInstance(
-        grid_size=(60, 60),
-        trips=trips,
-        depots=depots,
-        relief_points=relief_points,
-        charging_stations=charging_stations,
-    )
-
-    instance.meta = {
-        "K": total_buses,
-        "T": len(trips),
-        "F": len(charging_stations),
-        "lambda": 2.0,
-        "p_max": PHI_MAX,
-        "p_min": PHI_MIN,
-        "travel_cost": TRAVEL_COST,
-        "charging_rate": CHARGING_RATE_KWH_PER_MINUTE,
-        "theta_factor": THETA_FACTOR,
-        "cluster_trips_file": os.path.basename(
-            cluster_trips_txt_path
-        ),
-        "day": day,
-        "buses_per_depot": list(buses_per_depot),
-        "buses_availability_times": list(
-            buses_availability_times
-        ),
-        "buses_initial_soc": list(buses_SoC),
-        "number_of_cs_per_depot": number_of_CS_per_depot,
-        "buses_state": list(buses_state),
-        "trip_energy_method": (
-            "segment-wise GTFS stop sequence distance"
-        ),
-        "trip_energy_audit": energy_audit,
-    }
-
-    return instance
-
-
 def load_instance_from_gtfs(
-    route_id: int,
+    route_ids: list[int],
     day: str,
     gtfs_folder_path: str,
     depot_filepath: str,
@@ -571,61 +70,93 @@ def load_instance_from_gtfs(
     # ------------------------------------------------------------------
     # 1) Extract GTFS data for all routes and pick the desired route
     # ------------------------------------------------------------------
+
     route_info = extract_gtfs_trips_data.process_gtfs_data(
         day=day,
         gtfs_folder_path=gtfs_folder_path,
         number_of_removed_stops=number_of_removed_stops
     )
 
-    if route_id not in route_info:
-        raise ValueError(f"Route ID {route_id} not found in GTFS data.")
+    valid_route_ids = [rid for rid in route_ids if rid in route_info]
 
-    # route_data structure (per extract_gtfs_trips_data):
-    route_data = route_info[route_id]
-
-    go_times = route_data[0]
-    come_times = route_data[1]
-    avg_go_travel_time = route_data[2]
-    avg_come_travel_time = route_data[3]
-
-    go_last_stops_coords = route_data[4]
-    come_last_stops_coords = route_data[5]
-    go_first_stops_coords = route_data[6]
-    come_first_stops_coords = route_data[7]
-
-    # NEW: full stop sequences for each trip (coords)
-    go_trip_stop_coords = route_data[8]
-    come_trip_stop_coords = route_data[9]
-
+    if not valid_route_ids:
+        raise ValueError("None of the provided route IDs were found in GTFS data.")
+    
     # Trip pruning logic (mirrors attached file)
     def prune(lst, start, n):
         if n is None:
             return lst[start:]
         return lst[start:start + n]
+    
+    def build_trips_for_direction(
+        route_id,
+        direction_id,
+        start_times,
+        first_coords_list,
+        last_coords_list,
+        avg_travel_time,
+        stop_sequences_coords   # NEW: list of [[lat,lon], ...] per trip
+    ):
+        nonlocal trip_counter, trips, relief_points
 
-    go_times = prune(go_times, first_go_trip, num_go_trips)
-    come_times = prune(come_times, first_come_trip, num_come_trips)
+        for idx, start_minutes in enumerate(start_times):
+            try:
+                start_lat, start_lon = first_coords_list[idx]
+                end_lat, end_lon = last_coords_list[idx]
+                stops_coords = stop_sequences_coords[idx]
+            except IndexError:
+                # misalignment paranoia
+                continue
 
-    go_last_stops_coords = prune(go_last_stops_coords, first_go_trip, num_go_trips)
-    go_first_stops_coords = prune(go_first_stops_coords, first_go_trip, num_go_trips)
-    go_trip_stop_coords = prune(go_trip_stop_coords, first_go_trip, num_go_trips)
+            if len(stops_coords) < 2:
+                # can't compute segment distances with <2 stops
+                continue
 
-    come_last_stops_coords = prune(come_last_stops_coords, first_come_trip, num_come_trips)
-    come_first_stops_coords = prune(come_first_stops_coords, first_come_trip, num_come_trips)
-    come_trip_stop_coords = prune(come_trip_stop_coords, first_come_trip, num_come_trips)
+            start_point = Point(start_lon, start_lat)
+            end_point = Point(end_lon, end_lat)
 
-    if not go_times and not come_times:
-        raise ValueError(f"Route {route_id} has no trips for day '{day}'.")
+            relief_points.add(start_point)
+            relief_points.add(end_point)
+
+            trip_length = float(avg_travel_time)
+
+            start_time = float(start_minutes)
+            end_time = start_time + trip_length
+
+            # NEW: segment-wise distance -> eta
+            total_dist_m = 0.0
+            for i in range(len(stops_coords) - 1):
+                lat1, lon1 = stops_coords[i]
+                lat2, lon2 = stops_coords[i + 1]
+                total_dist_m += haversine.main(lat1, lon1, lat2, lon2)
+
+            eta_value = total_dist_m * THETA_FACTOR
+
+            trip = Trip(
+                id=trip_counter,
+                start_point=start_point,
+                end_point=end_point,
+                start_time=start_time,
+                end_time=end_time,
+                trip_type="REGULAR"
+            )
+
+            trip.route_id = route_id
+            trip.direction_id = direction_id
+            trip.start_time_window = (start_time - TIME_WINDOW_SLACK,
+                                    start_time + TIME_WINDOW_SLACK)
+            trip.trip_length = trip_length
+            trip.eta = eta_value
+
+            trips.append(trip)
+            trip_counter += 1
 
     # ------------------------------------------------------------------
     # 2) Define depot and charging stations (all at same coordinate)
     # ------------------------------------------------------------------
 
-    number_of_vehicles_per_depot = 4
-    number_of_cs_per_depot = 1
-
     # ------------------------------------------------------------------
-    # 2) Read depot coordinates
+    # 2a) Read depot coordinates
     # ------------------------------------------------------------------
 
     df = read_comma_delimited_file(depot_filepath)
@@ -633,7 +164,7 @@ def load_instance_from_gtfs(
         raise ValueError("Depot file could not be read or is empty.")
     
     # ---------------------------------------------------------------
-    # Fleet configuration validation
+    # 2b) Fleet configuration validation
     # ---------------------------------------------------------------
 
     if buses_per_depot is None or buses_availability_times is None or buses_SoC is None:
@@ -659,10 +190,8 @@ def load_instance_from_gtfs(
             "Length of buses_SoC must equal total number of buses"
         )
 
-    number_of_depots = len(df)
-
-    K = number_of_depots * number_of_vehicles_per_depot
-    F_chargers = number_of_depots * number_of_cs_per_depot
+    K = total_buses
+    F_chargers = number_of_depots * number_of_CS_per_depot
     
     required_columns = {"lon", "lat"}
     if not required_columns.issubset(df.columns):
@@ -675,9 +204,6 @@ def load_instance_from_gtfs(
 
     if len(depot_points) < 2:
         raise ValueError("At least two depots are required.")
-
-    # Use exactly two depots
-    depot_points = depot_points[:2]
 
     # ------------------------------------------------------------------
     # 3) Instantiate depots and charging stations
@@ -711,93 +237,70 @@ def load_instance_from_gtfs(
     # ------------------------------------------------------------------
     # 3) Build Trip objects, one per GTFS departure in both directions
     # ------------------------------------------------------------------
+    
     trips = []
-    relief_points = depot_points
-
     trip_counter = 1
+    relief_points = set(depot_points)
 
-    def build_trips_for_direction(
-        start_times,
-        first_coords_list,
-        last_coords_list,
-        avg_travel_time,
-        stop_sequences_coords   # NEW: list of [[lat,lon], ...] per trip
-    ):
-        nonlocal trip_counter, trips, relief_points
+    for route_id in valid_route_ids:
 
-        for idx, start_minutes in enumerate(start_times):
-            try:
-                start_lat, start_lon = first_coords_list[idx]
-                end_lat, end_lon = last_coords_list[idx]
-                stops_coords = stop_sequences_coords[idx]
-            except IndexError:
-                # misalignment paranoia
-                continue
+        route_data = route_info[route_id]
 
-            if len(stops_coords) < 2:
-                # can't compute segment distances with <2 stops
-                continue
+        go_times = route_data[0]
+        come_times = route_data[1]
+        avg_go_travel_time = route_data[2]
+        avg_come_travel_time = route_data[3]
 
-            start_point = Point(start_lon, start_lat)
-            end_point = Point(end_lon, end_lat)
+        go_last_stops_coords = route_data[4]
+        come_last_stops_coords = route_data[5]
+        go_first_stops_coords = route_data[6]
+        come_first_stops_coords = route_data[7]
+        go_trip_stop_coords = route_data[8]
+        come_trip_stop_coords = route_data[9]
 
-            relief_points.append(start_point)
-            relief_points.append(end_point)
+        go_times = prune(go_times, first_go_trip, num_go_trips)
+        go_first_stops_coords = prune(go_first_stops_coords, first_go_trip, num_go_trips)
+        go_last_stops_coords = prune(go_last_stops_coords, first_go_trip, num_go_trips)
+        go_trip_stop_coords = prune(go_trip_stop_coords, first_go_trip, num_go_trips)
 
-            trip_length = float(avg_travel_time)
+        come_times = prune(come_times, first_come_trip, num_come_trips)
+        come_first_stops_coords = prune(come_first_stops_coords, first_come_trip, num_come_trips)
+        come_last_stops_coords = prune(come_last_stops_coords, first_come_trip, num_come_trips)
+        come_trip_stop_coords = prune(come_trip_stop_coords, first_come_trip, num_come_trips)
 
-            start_time = float(start_minutes)
-            end_time = start_time + trip_length
+        # Direction 0
+        build_trips_for_direction(
+            route_id, 0,
+            go_times,
+            go_first_stops_coords,
+            go_last_stops_coords,
+            avg_go_travel_time,
+            go_trip_stop_coords
+        )
 
-            # NEW: segment-wise distance -> eta
-            total_dist_m = 0.0
-            for i in range(len(stops_coords) - 1):
-                lat1, lon1 = stops_coords[i]
-                lat2, lon2 = stops_coords[i + 1]
-                total_dist_m += haversine.main(lat1, lon1, lat2, lon2)
+        # Direction 1
+        build_trips_for_direction(
+            route_id, 1,
+            come_times,
+            come_first_stops_coords,
+            come_last_stops_coords,
+            avg_come_travel_time,
+            come_trip_stop_coords
+        )
 
-            eta_value = total_dist_m * THETA_FACTOR
+    relief_points = list(relief_points)
 
-            trip = Trip(
-                id=trip_counter,
-                start_point=start_point,
-                end_point=end_point,
-                start_time=start_time,
-                end_time=end_time,
-                trip_type="REGULAR"
-            )
-
-            trip.start_time_window = (start_time - TIME_WINDOW_SLACK,
-                                    start_time + TIME_WINDOW_SLACK)
-            trip.trip_length = trip_length
-            trip.eta = eta_value
-
-            trips.append(trip)
-            trip_counter += 1
-
-    # Direction 0
-    build_trips_for_direction(
-        go_times,
-        go_first_stops_coords,
-        go_last_stops_coords,
-        avg_go_travel_time,
-        go_trip_stop_coords
-    )
-
-    # Direction 1
-    build_trips_for_direction(
-        come_times,
-        come_first_stops_coords,
-        come_last_stops_coords,
-        avg_come_travel_time,
-        come_trip_stop_coords
-    )
+    if len(trips) == 0:
+        raise ValueError(
+            f"No trips were generated for routes {route_ids} on day '{day}'."
+        )
 
     T_trips = len(trips)
 
     # ------------------------------------------------------------------
     # 4) Build ProblemInstance and meta info
     # ------------------------------------------------------------------
+    
     grid_size = (60, 60)  # irrelevant for GTFS geometry but required by class
 
     instance = ProblemInstance(
@@ -820,7 +323,7 @@ def load_instance_from_gtfs(
         "travel_cost": TRAVEL_COST,
         "charging_rate": CHARGING_RATE_KWH_PER_MINUTE,
         "theta_factor": THETA_FACTOR,
-        "route_id": route_id,
+        "route_ids": route_ids,
         "day": day
     }
 
@@ -830,6 +333,17 @@ def load_instance_from_gtfs(
         "buses_initial_soc": buses_SoC,
         "number_of_cs_per_depot": number_of_CS_per_depot
     })
+
+    for t in instance.trips:
+        print(
+            t.id,
+            t.route_id,
+            t.direction_id,
+            t.start_time,
+            t.end_time,
+            t.start_point.x, t.start_point.y,
+            t.end_point.x, t.end_point.y,
+        )
 
     return instance
 
@@ -842,7 +356,7 @@ def solve_md_vsp_tw_from_instance(
     waiting_cost_lambda: float = 8.0,
     time_limit_sec: float = None,
     accept_time_limit_incumbent: bool = True,
-):    
+):
     """
     Solves the MD-VSP-TW with an Energy Buffer extension and returns the report.
 
@@ -869,6 +383,53 @@ def solve_md_vsp_tw_from_instance(
     charging_station_map = {f"C{i+1}": cs for i, cs in enumerate(instance.charging_stations)}
     charging_station_ids = list(charging_station_map.keys())
     charging_station_set = set(charging_station_ids)
+
+    # ============================================================
+    # Physical charger set C and assignment parameter a[i,j]
+    # ============================================================
+    # F = virtual chargers / copied charger nodes, currently named C1, C2, ...
+    # C = unique physical charger locations, named PC1, PC2, ...
+
+    LOCATION_PRECISION = 6
+
+    def charger_location_key(cs):
+        return (
+            round(cs.location.x, LOCATION_PRECISION),
+            round(cs.location.y, LOCATION_PRECISION)
+        )
+
+    virtual_charger_ids = charging_station_ids
+
+    location_to_physical_charger = {}
+    physical_charger_map = {}
+    charger_to_physical_charger = {}
+
+    for f_id, cs in charging_station_map.items():
+        loc_key = charger_location_key(cs)
+
+        if loc_key not in location_to_physical_charger:
+            pc_id = f"PC{len(location_to_physical_charger) + 1}"
+            location_to_physical_charger[loc_key] = pc_id
+
+            physical_charger_map[pc_id] = {
+                "location": cs.location,
+                "virtual_chargers": []
+            }
+
+        pc_id = location_to_physical_charger[loc_key]
+
+        charger_to_physical_charger[f_id] = pc_id
+        physical_charger_map[pc_id]["virtual_chargers"].append(f_id)
+
+    physical_charger_ids = list(physical_charger_map.keys())
+    physical_charger_set = set(physical_charger_ids)
+
+    a = {
+        (f_id, pc_id): int(charger_to_physical_charger[f_id] == pc_id)
+        for f_id in virtual_charger_ids
+        for pc_id in physical_charger_ids
+    }
+
     internal_nodes = trip_ids + charging_station_ids
 
     # Origin / destination node labels for vehicles
@@ -1035,8 +596,6 @@ def solve_md_vsp_tw_from_instance(
     w = model.addVars(arcs.keys(), vtype=GRB.CONTINUOUS, lb=0.0, name="w")
 
     starting_node_keys = set((k, i) for k in vehicles for i in origin_nodes.values() for j in all_nodes if (k, i, j) in arcs.keys())
-    ending_node_keys = set((k, j) for k in vehicles for i in all_nodes for j in dest_nodes.values() if (k, i, j) in arcs.keys())
-
     w_o = model.addVars(starting_node_keys, vtype=GRB.CONTINUOUS, lb=0.0, name="w_o")
 
     # --- Energy Variables ---
@@ -1049,29 +608,34 @@ def solve_md_vsp_tw_from_instance(
 
     # CT_j^k: Charging completion time for vehicle k at station j
     ct_keys = [(k, j) for k in vehicles for j in charging_station_ids]
-    CT = model.addVars(ct_keys, vtype=GRB.CONTINUOUS, lb=0.0, name="CT")
+    CT = model.addVars(ct_keys, vtype=GRB.CONTINUOUS, lb=0.0, ub=2160.0, name="CT")
 
     # y_j^{k1, k2}: Binary to order vehicles at charging station j
-    y_keys = [(j, k1, k2) for j in charging_station_ids for k1 in vehicles for k2 in vehicles if k1 != k2]
+    y_keys = [
+        (pc, k1, k2)
+        for pc in physical_charger_ids
+        for k1 in vehicles
+        for k2 in vehicles
+        if k1 != k2
+    ]
+
     Y = model.addVars(y_keys, vtype=GRB.BINARY, name="Y")
 
-    tau = model.addVars(ct_keys, vtype=gp.GRB.CONTINUOUS, lb=0, ub=1440, name='tau') #required time period to recharge vehicle k at charging event i
+    tau = model.addVars(ct_keys, vtype=gp.GRB.CONTINUOUS, lb=0.0, ub=1440.0, name='tau') #required time period to recharge vehicle k at charging event i
 
-    buses_state = instance.meta.get("buses_state")
+    b_s = {}
+    for vehicle in vehicles:
+        b_s[vehicle] = 1
 
-    if buses_state is None:
-        raise ValueError("buses_state missing from instance.meta")
+    availability = [0.0] * len(vehicles)
+    buses_state = [True] * len(vehicles)
 
-    # vehicles is already an ordered list like ["D1_V1", "D1_V2", ...]
-    b_s = {k: buses_state[i] for i, k in enumerate(vehicles)}
-
-    # Objective function (32)
+    # Objective function (32)  
     waiting_cost_lambda = instance.meta["lambda"]
-    initial_soc = instance.meta["buses_initial_soc"]
 
     lambda_1 = waiting_cost_lambda
     lambda_2 = 150
-    lambda_3 = 0.5
+    lambda_3 = 2
 
     # Objective function (32)
     objective = gp.quicksum(base_costs[k, i, j] * x[k, i, j] for k, i, j in arcs.keys()) + \
@@ -1101,9 +665,9 @@ def solve_md_vsp_tw_from_instance(
     model.addConstrs((x.sum(k, origin_nodes[k], '*') == x.sum(k, '*', dest_nodes[k]) for k in vehicles), name="ReturnToDepot")
 
     # Constraint (#36)
-    model.addConstrs((x.sum(k, origin_nodes[k], '*') <= 1 for k in vehicles), name="StartOnce")
-    # for k in vehicles:
-    #     model.addConstr(gp.quicksum(x[k, i, j] for i in origin_nodes[k] for j in trip_ids if (k, i, j) in arcs.keys()) <= 1, name="StartOnce")
+    # model.addConstrs((x.sum(k, origin_nodes[k], '*') <= 1 for k in vehicles), name="StartOnce")
+    for k in vehicles:
+        model.addConstr(gp.quicksum(x[k, i, j] for i in origin_nodes for j in trip_ids if (k, i, j) in arcs.keys()) <= 1, name="StartOnce")
 
     depot_to_vehicles = {}
     for depot in instance.depots:
@@ -1123,9 +687,7 @@ def solve_md_vsp_tw_from_instance(
             name=f"DepotCapacity_{origin_node_id}"
         )
 
-    # ==================================================
-    # Time-window constraints
-    # ==================================================
+    # --- Time window constraints for T[k, i] ---
     availability = instance.meta["buses_availability_times"]
     for k, i in T.keys():
 
@@ -1177,7 +739,7 @@ def solve_md_vsp_tw_from_instance(
 
         if i in origin_nodes.values():
             idx = vehicles.index(k)
-            model.addConstr(w_o[k, i] >= (1-buses_state[idx])*(T[k, i] - availability[idx]) - BIG_M*(1 - x[k, i, j]))    
+            model.addConstr(w_o[k, i] >= (1-buses_state[idx])*(T[k, i] - availability[idx]) - BIG_M*(1 - x[k, i, j]))
 
     # ==================================================
     # Energy Consumption constraints
@@ -1187,6 +749,8 @@ def solve_md_vsp_tw_from_instance(
         d_node = dest_nodes[k]
 
         # Constraint (#44)
+        initial_soc = instance.meta["buses_initial_soc"]
+
         vehicle_index = vehicles.index(k)
 
         model.addConstr(E_bar[k, o_node] == initial_soc[vehicle_index], name=f"EB_StartSOC_{k}")
@@ -1254,7 +818,7 @@ def solve_md_vsp_tw_from_instance(
                 if (k, i, j) in arcs.keys():
                     
                     # Constraint (#51)
-                    # model.addConstr(CT[k, j] <= T[k, j] + tau[k, j] + BIG_M * (1 - x[k, i, j]), name=f"ChargeCompTime_UB1_{k}_{i}_{j}")
+                    model.addConstr(CT[k, j] <= T[k, j] + tau[k, j] + BIG_M * (1 - x[k, i, j]), name=f"ChargeCompTime_UB1_{k}_{i}_{j}")
                     
                     # Constraint (#52)
                     model.addConstr(CT[k, j] >= T[k, j] + tau[k, j] - BIG_M * (1 - x[k, i, j]), name=f"ChargeCompTime_LB1_{k}_{i}_{j}")
@@ -1264,24 +828,58 @@ def solve_md_vsp_tw_from_instance(
     #         model.addConstr(CT[k, j] <= BIG_M * gp.quicksum(x[k, i, j] for i in trip_ids if (k, i, j) in arcs.keys()), name=f"ChargeCompTime_zero_{k}_{j}") # Constraint (53)
 
     # Charging order constraints
-    for j in charging_station_ids:
-        for k1 in vehicles:
-            for k2 in vehicles:
-                if k1 != k2:
-                    # Constraint (#53)
-                    model.addConstr(
-                        T[k1, j] <= T[k2, j] + BIG_M * Y[j, k1, k2], name=f"ChargeOrder_Arr_Time_1_{j}_{k1}_{k2}")
-                    # Constraint (#54)
-                    model.addConstr(
-                        T[k1, j] >= CT[k2, j] + SMALL_M - BIG_M * (1 - Y[j, k1, k2]), name=f"ChargeOrder_Comp_Time_2_{j}_{k1}_{k2}")
-
-    # Constraint for zero-ing Y - turns out that it is optional                
     # for j in charging_station_ids:
     #     for k1 in vehicles:
     #         for k2 in vehicles:
     #             if k1 != k2:
-    #                 model.addConstr(Y[j, k1, k2] <= BIG_M * gp.quicksum(x[k1, i, j] for i in trip_ids if (k, i, j) in arcs.keys()) , name=f"zero_Y_1{k}_{j}") # Constraint (53)
-    #                 model.addConstr(Y[j, k1, k2] <=  BIG_M * gp.quicksum(x[k2, i, j] for i in trip_ids if (k, i, j) in arcs.keys()), name=f"zero_Y_2{k}_{j}") # Constraint (53)
+    #                 # Constraint (#53)
+    #                 model.addConstr(
+    #                     CT[k1, j] <= T[k2, j] + BIG_M * Y[j, k1, k2], name=f"ChargeOrder_Arr_Time_1_{j}_{k1}_{k2}")
+    #                 # Constraint (#54)
+    #                 model.addConstr(
+    #                     T[k1, j] >= CT[k2, j] + SMALL_M - BIG_M * (1 - Y[j, k1, k2]), name=f"ChargeOrder_Comp_Time_2_{j}_{k1}_{k2}")
+
+    # ============================================================
+    # Charging order constraints by physical charger
+    # Y[pc, k1, k2] has only 3 indices
+    # ============================================================
+
+    for pc in physical_charger_ids:
+        virtuals_at_pc = physical_charger_map[pc]["virtual_chargers"]
+
+        for f1 in virtuals_at_pc:
+            for f2 in virtuals_at_pc:
+                for k1 in vehicles:
+                    for k2 in vehicles:
+                        if k1 == k2:
+                            continue
+
+                        use_k1_f1 = gp.quicksum(x[k1, i, f1] for i in arc_starting_nodes if (k1, i, f1) in arcs)
+
+                        use_k2_f2 = gp.quicksum(x[k2, i, f2] for i in arc_starting_nodes if (k2, i, f2) in arcs)
+
+                        # If Y[pc, k1, k2] = 0, then k1 charges before k2
+                        model.addConstr(
+                            CT[k1, f1] + SMALL_M <= T[k2, f2]
+                            + BIG_M * Y[pc, k1, k2]
+                            + BIG_M * (2 - use_k1_f1 - use_k2_f2),
+                            name=f"ChargeOrder_1_{pc}_{f1}_{f2}_{k1}_{k2}"
+                        )
+
+                        # If Y[pc, k1, k2] = 1, then k2 charges before k1
+                        model.addConstr(
+                            CT[k2, f2] + SMALL_M <= T[k1, f1]
+                            + BIG_M * (1 - Y[pc, k1, k2])
+                            + BIG_M * (2 - use_k1_f1 - use_k2_f2),
+                            name=f"ChargeOrder_2_{pc}_{f1}_{f2}_{k1}_{k2}"
+                        )
+
+    for k in vehicles:
+        for j in charging_station_ids:
+            model.addConstr(CT[k, j] <= BIG_M * gp.quicksum(x[k, i, j] for i in arc_starting_nodes if (k, i, j) in arcs), name=f"slot_end_def_UB_{k}_{i}_{j}")  
+            model.addConstr(T[k, j] <= BIG_M * gp.quicksum(x[k, i, j] for i in arc_starting_nodes if (k, i, j) in arcs), name=f"slot_end_def_UB_{k}_{i}_{j}")  
+            model.addConstr(tau[k, j] <= BIG_M * gp.quicksum(x[k, i, j] for i in arc_starting_nodes if (k, i, j) in arcs), name=f"slot_end_def_UB_{k}_{i}_{j}")  
+            model.addConstr(G[k, j] <= BIG_M * gp.quicksum(x[k, i, j] for i in arc_starting_nodes if (k, i, j) in arcs), name=f"slot_end_def_UB_{k}_{i}_{j}")  
 
     # ============================================================
     # Valid Inequalities
@@ -1370,14 +968,13 @@ def solve_md_vsp_tw_from_instance(
                 model.addConstr(
                     gp.quicksum(x[a] for a in incoming_arcs) <= 1, name=f"VI5_in_{k}_{v}")
 
-    # model.setParam('MIPGap', 0.01)
+    model.setParam('MIPGap', 0.5)
 
-    effective_time_limit = time_limit_sec
-    if effective_time_limit is None:
-        effective_time_limit = globals().get("GUROBI_TIME_LIMIT_SEC", None)
-
-    if effective_time_limit is not None:
-        model.setParam("TimeLimit", float(effective_time_limit))
+    time_limit = time_limit_sec
+    if time_limit is None:
+        time_limit = globals().get("GUROBI_TIME_LIMIT_SEC", None)
+    if time_limit is not None:
+        model.setParam("TimeLimit", float(time_limit))
 
     model.optimize()
 
@@ -1394,11 +991,10 @@ def solve_md_vsp_tw_from_instance(
 
         print(f"Solution Performance (SP): {model.ObjVal:.2f}")
 
-    # --- Reporting Logic (Updated to include Energy Variables) ---
     report_lines, schedules = [], {}
     variable_report_str = ""
-    solution_data = {}
     bus_end_states = {}
+    solution_data = {}
     default_time_var = type('obj', (object,), {'X': 0.0})  # Helper for safe .X access
 
     has_usable_solution = (
@@ -1411,37 +1007,93 @@ def solve_md_vsp_tw_from_instance(
 
     if has_usable_solution:
 
-        bus_end_states = {}
+        # ============================================================
+        # Debug print: physical and virtual charger sets
+        # ============================================================
 
-        used_vehicles = {
-            k for (k, i, j) in x.keys()
-            if x[k, i, j].X > 0.5
-        }
+        print("\n--- Charger Sets ---")
 
-        for k in used_vehicles:
-            final_node = dest_nodes[k]  # e.g. "D1"
+        print(f"Virtual charger set F ({len(virtual_charger_ids)} chargers):")
+        print(virtual_charger_ids)
 
-            arrival_time = T.get((k, final_node), default_time_var).X
-            soc = E_pre.get((k, final_node), default_time_var).X
+        print(f"\nPhysical charger set C ({len(physical_charger_ids)} chargers):")
+        print(physical_charger_ids)
 
-            depot_id = int(final_node[1:])  # strip "D"
+        print("\nPhysical charger -> virtual chargers mapping:")
+        for pc_id in physical_charger_ids:
+            loc = physical_charger_map[pc_id]["location"]
+            virtuals = physical_charger_map[pc_id]["virtual_chargers"]
 
-            bus_end_states[k] = {
-                "depot_id": depot_id,
-                "arrival_time": round(arrival_time, 4),
-                "soc": round(soc, 4)
-            }
+            print(
+                f"  {pc_id} at ({loc.x:.6f}, {loc.y:.6f}) "
+                f"contains virtual chargers: {virtuals}"
+            )
 
-        bus_end_states_dir = os.path.join(bus_end_states_output_dir)
-        os.makedirs(bus_end_states_dir, exist_ok=True)
+        print("\nAssignment parameter a[f, pc] = 1:")
+        for (f_id, pc_id), value in a.items():
+            if value == 1:
+                print(f"  a[{f_id}, {pc_id}] = 1")
 
-        bus_end_states_path = os.path.join(bus_end_states_dir, f"bus_end_states_{timestamp}.json")
-
-        with open(bus_end_states_path, "w") as f:
-            json.dump(bus_end_states, f, indent=4)
+        print("--- End Charger Sets ---\n")
 
         # New dictionary to collect variable results for JSON export
         solution_vars_json = {}
+
+        # ============================================================
+        # Charging sessions: bus, charger, T, tau, CT, predecessor, successor
+        # ============================================================
+
+        print("\n--- Charging Sessions ---")
+        print(
+            f"{'Bus':<12} {'Physical':<10} {'Virtual':<10} "
+            f"{'From':<10} {'To':<10} {'T':>12} {'tau':>12} {'CT':>12}"
+        )
+
+        charging_sessions = []
+
+        for k in vehicles:
+            for j in charging_station_ids:
+
+                incoming = [
+                    i
+                    for i in arc_starting_nodes
+                    if (k, i, j) in x and x[k, i, j].X > 0.5
+                ]
+
+                outgoing = [
+                    h
+                    for h in target_nodes
+                    if (k, j, h) in x and x[k, j, h].X > 0.5
+                ]
+
+                if incoming:
+                    pc = charger_to_physical_charger.get(j, "N/A")
+
+                    from_node = incoming[0]
+                    to_node = outgoing[0] if outgoing else "N/A"
+
+                    t_val = T[k, j].X if (k, j) in T else 0.0
+                    tau_val = tau[k, j].X if (k, j) in tau else 0.0
+                    ct_val = CT[k, j].X if (k, j) in CT else 0.0
+
+                    charging_sessions.append(
+                        (k, pc, j, from_node, to_node, t_val, tau_val, ct_val)
+                    )
+
+        charging_sessions.sort(key=lambda row: (row[0], row[5]))
+
+        for k, pc, j, from_node, to_node, t_val, tau_val, ct_val in charging_sessions:
+            print(
+                f"{k:<12} {pc:<10} {j:<10} "
+                f"{from_node:<10} {to_node:<10} "
+                f"{t_val:>12.2f} {tau_val:>12.2f} {ct_val:>12.2f}"
+            )
+
+        if not charging_sessions:
+            print("No charging sessions used in the solution.")
+
+        print("--- End Charging Sessions ---\n")
+
         TOL = 1e-4  # Tolerance for non-negative values
 
         # --- Helper function to extract and save variable values ---
@@ -1464,6 +1116,7 @@ def solve_md_vsp_tw_from_instance(
         # CT and Y
         try:
             extract_vars(CT, "CT")
+            extract_vars(tau, "tau")
             extract_vars(Y, "Y")
         except NameError:
             pass
@@ -1473,15 +1126,9 @@ def solve_md_vsp_tw_from_instance(
         if model.status == GRB.OPTIMAL:
             report_lines.append(f"Optimal solution found with total cost: {model.ObjVal:.2f}")
         else:
-            gap_text = "N/A"
-            try:
-                gap_text = f"{model.MIPGap * 100:.2f}%"
-            except Exception:
-                pass
-
             report_lines.append(
                 f"Feasible incumbent found with total cost: {model.ObjVal:.2f}; "
-                f"status={model.status}; gap={gap_text}"
+                f"status={model.status}; gap={model.MIPGap * 100:.2f}%"
             )
         used_vehicles = {k for k, i, j in x.keys() if x[k, i, j].X > 0.5}
         report_lines.append(f"Total vehicles used: {len(used_vehicles)} out of {len(vehicles)}")
@@ -1567,7 +1214,7 @@ def solve_md_vsp_tw_from_instance(
             var_report_lines.append(f"  CT[{k}, {j}] = {CT[k, j].X:.2f}")
 
         # 6. Charging order variables
-        var_report_lines.append("\n--- Charging Order Variables (Y[j, k1, k2] = 1) ---")
+        var_report_lines.append("\n--- Charging Order Variables (Y[pc, k1, k2] = 1) ---")
         sorted_Y_keys = sorted([key for key in Y.keys() if Y[key].X > 0.5])
         for (j, k1, k2) in sorted_Y_keys:
             var_report_lines.append(f"  Y[{j}, {k1}, {k2}] = {Y[j, k1, k2].X:.0f}")
@@ -1584,16 +1231,7 @@ def solve_md_vsp_tw_from_instance(
             f"No feasible incumbent was found. Solver status: {model.status}"
         )
 
-    obj_value = float(model.ObjVal) if model.SolCount > 0 else None
-
-    return (
-        "\n".join(report_lines),
-        schedules,
-        variable_report_str,
-        bus_end_states,
-        model.status,
-        obj_value,
-    )
+    return "\n".join(report_lines), schedules, variable_report_str
 
 # ============================================================
 # Reporting Function (Non-Plotting)
@@ -1691,47 +1329,46 @@ if __name__ == "__main__":
     This block runs only when the script is executed directly.
     """
 
+    start_time = time.perf_counter()
+
     random.seed(43)
 
     # 1. Load instance from GTFS
     print("--- Part 1: Loading GTFS-based instance ---")
 
     # GTFS settings
-    route_id = 1033 # 550 -> 959, 831 -> 874, 217 -> 1033, 229 -> 1034, Β1 -> 871, Χ14 -> 993, 451 -> 1060. 
+    route_ids = [1033, 1034, 871, 874] # 550 -> 959, 831 -> 874, 217 -> 1033, 229 -> 1034, Β1 -> 871, Χ14 -> 993, 451 -> 1060. 
     day = "monday"
     gtfs_folder_path = os.path.join(project_root, "..", "input", "gtfs", "oasa_third_results_section")
     depot_filepath = os.path.join(project_root, "..", "input", "depots.txt")
 
-    cluster_id = 1
-
-    cluster_trips_txt = os.path.join(
-        project_root,
-        "..",
-        "output",
-        "clusters",
-        f"cluster_{cluster_id}",
-        "trips.txt"
-    )
-
-    instance = load_instance_from_gtfs_cluster(
-        cluster_trips_txt_path=cluster_trips_txt,
+    instance = load_instance_from_gtfs(
+        route_ids=route_ids,
         day=day,
         gtfs_folder_path=gtfs_folder_path,
         depot_filepath=depot_filepath,
-        buses_per_depot=[4, 4],
-        buses_availability_times=[0.0] * 8,
-        buses_SoC=[350.0] * 8,
-        number_of_CS_per_depot=1,
-        buses_state = [True] * 8
+        number_of_removed_stops=0,
+        first_go_trip=0,
+        num_go_trips=4,
+        first_come_trip=0,
+        num_come_trips=4,
+        buses_per_depot = [4, 4],
+        buses_availability_times = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        buses_SoC = [350.0, 350.0, 350.0, 350.0, 350.0, 350.0, 350.0, 350.0],
+        number_of_CS_per_depot = 2
     )
 
-    print(f"Instance successfully loaded for cluster {cluster_id} on {day}.")
+    # Standalone solve controls.
+    # None means no explicit wall-clock limit.
+    GUROBI_TIME_LIMIT_SEC = 18000
+    ACCEPT_TIME_LIMIT_INCUMBENTS = True
+
+    print(f"Instance successfully loaded for routes {route_ids} on {day}.")
 
     # 2. Set up output directory
     print("--- Part 2: Preparing Output Directory ---")
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     output_dir = os.path.join(project_root, "..", "output", f"EB_TW_run_{timestamp}")
-    bus_end_states_output_dir = os.path.join(project_root, "..", "output", "bus_end_states")
     os.makedirs(output_dir, exist_ok=True)
     bus_blocks_dir = os.path.join(output_dir, "bus_blocks")
     os.makedirs(bus_blocks_dir, exist_ok=True)
@@ -1746,11 +1383,12 @@ if __name__ == "__main__":
 
     # 4. Solve instance
     print("--- Part 4: Solving the Instance ---")
-    solution_report, schedules, variable_report_str, bus_end_states, _, _ = solve_md_vsp_tw_from_instance(
+    solution_report, schedules, variable_report_str = solve_md_vsp_tw_from_instance(
         instance,
         time_limit_sec=GUROBI_TIME_LIMIT_SEC,
         accept_time_limit_incumbent=ACCEPT_TIME_LIMIT_INCUMBENTS,
     )
+
     print("\r")
 
     print(schedules)
@@ -1780,4 +1418,10 @@ if __name__ == "__main__":
             f.write("\n\n--- SOLUTION VARIABLES ---")
             f.write(variable_report_str)
 
+    end_time = time.perf_counter()
+    elapsed_sec = end_time - start_time
+
     print(f"\nProcess complete. All results saved in '{output_dir}'")
+
+    print(f"\nTotal execution time: {elapsed_sec:.2f} seconds ({elapsed_sec/60:.2f} minutes)")
+
