@@ -6,6 +6,8 @@ This repository accompanies a study on the Electric Bus Multi-Depot Vehicle Sche
 
 This model is presented in the article (LINK TO BE ADDED HERE) by Dimitrios Rizopoulos and Konstantinos Gkiotsalitis.
 
+In case that you want to reproduce our work, you may also contact us at dimitrisrizopoulos@mail.ntua.gr.
+
 ## Acknowledgements
 
 The present work is partially funded by the metaCCAZE Project (Flexibly adapted MetaInnovations, use cases, collaborative business and governance models to accelerate deployment of smart and shared Zero Emission mobility for passengers and freight). This project has received funding from the European Union’s Horizon Europe research and innovation programme under grant agreement No. 101139678.
